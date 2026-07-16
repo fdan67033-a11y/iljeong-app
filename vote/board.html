@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>실시간 투표 결과</title>
+<title>실시간 팀 투표 결과</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -12,105 +12,123 @@
   }
   .wrap {
     display: flex; gap: 40px; max-width: 1320px; margin: 0 auto;
-    padding: 44px 32px; flex-wrap: wrap; align-items: flex-start;
+    padding: 44px 32px 20px; flex-wrap: wrap; align-items: flex-start;
   }
   .qrcard {
     background: #fff; color: #1f2330; border-radius: 22px;
-    padding: 28px 28px 22px; text-align: center; width: 320px; flex-shrink: 0;
+    padding: 24px 24px 18px; text-align: center; width: 260px; flex-shrink: 0;
   }
-  .qrcard h2 { font-size: 19px; margin-bottom: 16px; line-height: 1.45; }
+  .qrcard h2 { font-size: 16px; margin-bottom: 14px; line-height: 1.45; }
   #qr { display: flex; justify-content: center; }
   #qr img, #qr canvas { border-radius: 6px; }
   .qrcard .url {
-    margin-top: 14px; font-size: 12px; color: #8a90a3; word-break: break-all;
+    margin-top: 12px; font-size: 11px; color: #8a90a3; word-break: break-all;
     font-family: Consolas, monospace;
   }
   .chart { flex: 1; min-width: 420px; }
   .top { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
-  h1 { font-size: 44px; line-height: 1.25; }
-  #total { font-size: 22px; color: #9aa0b4; }
-  #total b { color: #f2f3f8; font-size: 30px; }
+  h1 { font-size: 42px; line-height: 1.25; }
+  #part { font-size: 22px; color: #9aa0b4; }
+  #part b { color: #f2f3f8; font-size: 30px; }
   #status { font-size: 14px; color: #9aa0b4; margin-top: 10px; display: flex; align-items: center; gap: 7px; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: #f0b429; flex-shrink: 0; }
   .dot.on { background: #22c55e; }
-  #rows { margin-top: 30px; }
-  .row { margin-bottom: 24px; border-radius: 14px; padding: 10px 14px; transition: background .5s; }
+  #rows { margin-top: 28px; }
+  .row { margin-bottom: 22px; border-radius: 14px; padding: 10px 14px; transition: background .5s; }
   .row.flash { background: rgba(255, 255, 255, .10); transition: none; }
-  .label { font-size: 27px; display: flex; justify-content: space-between; align-items: baseline; }
-  .label .cnt { font-size: 23px; color: #c6cad9; font-variant-numeric: tabular-nums; }
+  .label { font-size: 26px; display: flex; justify-content: space-between; align-items: baseline; }
+  .label .cnt { font-size: 22px; color: #c6cad9; font-variant-numeric: tabular-nums; }
   .track {
-    background: rgba(255, 255, 255, .07); border-radius: 12px; height: 46px;
+    background: rgba(255, 255, 255, .07); border-radius: 12px; height: 44px;
     overflow: hidden; margin-top: 10px;
   }
   .fill {
     height: 100%; border-radius: 12px; width: 0%;
     transition: width .6s cubic-bezier(.22, 1, .36, 1);
   }
-  .foot { max-width: 1320px; margin: 0 auto; padding: 0 32px 30px; display: flex; justify-content: flex-end; }
+  #waiting { max-width: 1320px; margin: 0 auto; padding: 0 32px 8px; font-size: 14px; color: #6f7488; }
+  .foot {
+    max-width: 1320px; margin: 0 auto; padding: 0 32px 30px;
+    display: none; justify-content: flex-end;
+  }
   #reset {
     background: none; border: 1px solid #33374a; color: #6f7488; border-radius: 9px;
     padding: 7px 14px; font-size: 12px; cursor: pointer; font-family: inherit;
   }
   #reset:hover { color: #c6cad9; border-color: #6f7488; }
+  @media (max-width: 760px) {
+    .wrap { flex-direction: column; align-items: center; padding: 24px 18px 12px; gap: 22px; }
+    .chart { min-width: 0; width: 100%; }
+    h1 { font-size: 27px; }
+    #part { font-size: 16px; } #part b { font-size: 21px; }
+    .label { font-size: 19px; } .label .cnt { font-size: 16px; }
+    .track { height: 34px; }
+    .qrcard { width: 220px; padding: 18px 18px 14px; }
+    .qrcard h2 { font-size: 14px; }
+    #waiting, .foot { padding-left: 18px; padding-right: 18px; }
+  }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="qrcard">
-      <h2>📱 스마트폰 카메라로<br>QR을 찍어 투표하세요</h2>
+      <h2>📱 이 결과판, 폰으로도<br>실시간으로 볼 수 있어요</h2>
       <div id="qr"></div>
-      <div class="url" id="voteUrl"></div>
+      <div class="url" id="boardUrl"></div>
     </div>
     <div class="chart">
       <div class="top">
         <h1 id="q"></h1>
-        <span id="total">총 <b>0</b>표</span>
+        <span id="part">제출 <b>0</b><span id="partTotal"></span></span>
       </div>
       <div id="status"><span class="dot" id="dot"></span><span id="statusText">연결 중…</span></div>
       <div id="rows"></div>
     </div>
   </div>
-  <div class="foot"><button id="reset">집계 초기화</button></div>
+  <div id="waiting"></div>
+  <div class="foot" id="foot"><button id="reset">전체 초기화</button></div>
 
 <script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="config.js"></script>
 <script>
-  var TOPIC = POLL.id + "/vote";
-  var storeKey = "qrvote-counts-" + POLL.id;
+  var TOPIC = POLL.id + "/ballot/+";
   var COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ec4899", "#38bdf8", "#f97316"];
 
-  document.getElementById("q").textContent = POLL.question;
+  document.getElementById("q").textContent = POLL.title;
+  document.getElementById("partTotal").textContent = " / " + POLL.voters.length + "명";
 
-  // ----- QR: 이 페이지 주소에서 board.html만 뗀 폴더 주소가 투표 페이지 -----
-  var voteUrl = new URL(".", location.href).href;
+  var teamByKey = {};
+  POLL.teams.forEach(function (t) { teamByKey[t.key] = t; });
+  var voterByH = {};
+  POLL.voters.forEach(function (v) { voterByH[v.h] = v; });
+
+  // ----- 이 결과판 자체를 가리키는 QR (?admin= 등 쿼리는 제외하고 공유) -----
+  var boardUrl = location.href.split("?")[0].split("#")[0];
   new QRCode(document.getElementById("qr"), {
-    text: voteUrl, width: 224, height: 224,
+    text: boardUrl, width: 172, height: 172,
     correctLevel: QRCode.CorrectLevel.M,
   });
-  document.getElementById("voteUrl").textContent = voteUrl;
+  document.getElementById("boardUrl").textContent = boardUrl;
 
-  // ----- 집계 상태 (새로고침해도 유지되도록 localStorage에 저장) -----
-  var counts = {};
-  try {
-    var parsed = JSON.parse(localStorage.getItem(storeKey));
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) counts = parsed;
-  } catch (e) {}
-  POLL.options.forEach(function (o) {
-    if (typeof counts[o.key] !== "number") counts[o.key] = 0;
-  });
-  function save() { localStorage.setItem(storeKey, JSON.stringify(counts)); }
+  // ----- 관리자 모드: board.html?admin=비밀번호 로 열면 초기화 버튼 표시 -----
+  var adminParam = new URLSearchParams(location.search).get("admin") || "";
+  if (adminParam) {
+    sha16(adminParam).then(function (ah) {
+      if (ah === POLL.adminHash) document.getElementById("foot").style.display = "flex";
+    });
+  }
 
   // ----- 막대 그래프 -----
   var rowEls = {};
   var rows = document.getElementById("rows");
-  POLL.options.forEach(function (o, i) {
+  POLL.teams.forEach(function (t, i) {
     var div = document.createElement("div");
     div.className = "row";
     var label = document.createElement("div");
     label.className = "label";
     var name = document.createElement("span");
-    name.textContent = o.emoji + " " + o.label;
+    name.textContent = t.emoji + " " + t.name;
     var cnt = document.createElement("span");
     cnt.className = "cnt";
     cnt.textContent = "0표 (0%)";
@@ -125,61 +143,100 @@
     div.appendChild(label);
     div.appendChild(track);
     rows.appendChild(div);
-    rowEls[o.key] = div;
+    rowEls[t.key] = div;
   });
 
-  function render() {
-    var total = 0;
-    POLL.options.forEach(function (o) { total += counts[o.key]; });
-    POLL.options.forEach(function (o) {
-      var pct = total ? (counts[o.key] / total) * 100 : 0;
-      var el = rowEls[o.key];
-      el.querySelector(".fill").style.width = pct + "%";
-      el.querySelector(".cnt").textContent = counts[o.key] + "표 (" + Math.round(pct) + "%)";
-    });
-    document.querySelector("#total b").textContent = total;
+  // ----- 집계: 브로커의 보존 메시지(사람별 마지막 표)가 진실의 원천 -----
+  //       결과판을 언제 어디서 열어도 브로커가 전체 표를 다시 보내줍니다.
+  //       사람별 상태 = { teams: [...] | null(초기화됨), ts: 시각 } — 최신 ts가 이김
+  var ballots = {};
+  var prevCounts = {};
+
+  function apply(h, teams, ts) {
+    var cur = ballots[h];
+    if (cur && cur.ts >= ts) return;
+    ballots[h] = { teams: teams, ts: ts };
+    recount();
   }
-  render();
+
+  function recount() {
+    var counts = {};
+    POLL.teams.forEach(function (t) { counts[t.key] = 0; });
+    var submitted = 0;
+    POLL.voters.forEach(function (v) {
+      var b = ballots[v.h];
+      if (!b || !b.teams) return;
+      submitted++;
+      b.teams.forEach(function (k) { counts[k]++; });
+    });
+    var total = submitted * POLL.maxPicks;
+    POLL.teams.forEach(function (t) {
+      var c = counts[t.key];
+      var pct = total ? (c / total) * 100 : 0;
+      var el = rowEls[t.key];
+      el.querySelector(".fill").style.width = pct + "%";
+      el.querySelector(".cnt").textContent = c + "표 (" + Math.round(pct) + "%)";
+      if (prevCounts[t.key] !== undefined && prevCounts[t.key] !== c) flash(t.key);
+      prevCounts[t.key] = c;
+    });
+    document.querySelector("#part b").textContent = submitted;
+
+    var missing = POLL.voters.filter(function (v) {
+      var b = ballots[v.h];
+      return !b || !b.teams;
+    });
+    var w = document.getElementById("waiting");
+    if (missing.length === 0) w.textContent = "🎉 전원 제출 완료!";
+    else if (missing.length === POLL.voters.length) w.textContent = "";
+    else w.textContent = "미제출: " + missing.map(function (v) { return v.name; }).join(", ");
+  }
+  recount();
 
   function flash(key) {
     var el = rowEls[key];
-    if (!el) return;
     el.classList.add("flash");
     setTimeout(function () { el.classList.remove("flash"); }, 80);
   }
 
-  // ----- 실시간 연결: 표 유실 방지를 위해 모든 브로커를 동시에 구독 -----
-  //       (참가자 폰이 어느 브로커로 연결되든 여기서 다 받습니다)
+  // ----- 메시지 검증: 표는 토큰 해시 = 토픽 일치해야 인정, 초기화는 관리자 해시 확인 -----
+  function onMsg(topic, payload) {
+    var h = topic.split("/").pop();
+    var voter = voterByH[h];
+    if (!voter) return;                          // 명단에 없는 토픽 무시
+    if (!payload || payload.length === 0) return; // 빈 메시지는 상태 변경 없음
+    var m;
+    try { m = JSON.parse(payload.toString()); } catch (e) { return; }
+    if (!m || !validTs(m.ts)) return;
+
+    if (m.reset === true && typeof m.a === "string") {
+      sha16(m.a).then(function (ah) {
+        if (ah !== POLL.adminHash) return;       // 가짜 초기화 무시
+        apply(h, null, m.ts);
+      });
+      return;
+    }
+
+    if (typeof m.token !== "string" || !validTeams(m.teams, voter.team)) return;
+    sha16(m.token).then(function (th) {
+      if (th !== h) return;                      // 토큰 증명 불일치 → 위조 표 무시
+      apply(h, m.teams, m.ts);
+    });
+  }
+
+  // ----- 실시간 연결: 두 브로커 모두 구독 -----
   function setStatus(text, on) {
     document.getElementById("statusText").textContent = text;
     document.getElementById("dot").className = on ? "dot on" : "dot";
   }
 
-  var seen = new Set();      // 투표 ID 중복 수신 방지 (QoS1 재전송 대비)
-  function onMsg(t, payload) {
-    try {
-      var m = JSON.parse(payload.toString());
-      if (!m || !Object.prototype.hasOwnProperty.call(counts, m.k)) return;
-      if (m.id) {
-        if (seen.has(m.id)) return;
-        seen.add(m.id);
-        if (seen.size > 2000) seen = new Set(Array.from(seen).slice(-1000));
-      }
-      counts[m.k]++;
-      save();
-      render();
-      flash(m.k);
-    } catch (e) { /* 잘못된 메시지는 무시 */ }
-  }
-
   var links = [];
   function updateStatus() {
     var up = links.some(function (x) { return x.up; });
-    if (up) setStatus("실시간 연결됨 — 투표를 기다리는 중", true);
+    if (up) setStatus("실시간 연결됨 — 표를 기다리는 중", true);
     else setStatus("연결 중…", false);
   }
   POLL.brokers.forEach(function (url) {
-    var entry = { up: false };
+    var entry = { up: false, client: null };
     links.push(entry);
     var c = mqtt.connect(url, {
       clientId: "qb_" + Math.random().toString(16).slice(2, 10),
@@ -187,6 +244,7 @@
       reconnectPeriod: 5000,
       clean: true,
     });
+    entry.client = c;
     c.on("connect", function () {
       entry.up = true;
       c.subscribe(TOPIC, { qos: 1 });
@@ -199,12 +257,19 @@
     c.on("message", onMsg);
   });
 
-  // ----- 초기화 -----
+  // ----- 전체 초기화 (관리자 전용): 타임스탬프 묘비를 모든 브로커·전원에게 저장 -----
   document.getElementById("reset").addEventListener("click", function () {
-    if (!confirm("집계를 0으로 초기화할까요?")) return;
-    POLL.options.forEach(function (o) { counts[o.key] = 0; });
-    save();
-    render();
+    if (!confirm("모든 표를 삭제하고 처음부터 다시 시작할까요?\n(모든 사람의 제출 내역이 사라집니다)")) return;
+    var ts = Date.now();
+    var payload = JSON.stringify({ reset: true, a: adminParam, ts: ts });
+    links.forEach(function (entry) {
+      if (!entry.client) return;
+      // 연결이 잠시 끊긴 브로커에도 보냄 — mqtt.js가 재연결 시 전송
+      POLL.voters.forEach(function (v) {
+        entry.client.publish(POLL.id + "/ballot/" + v.h, payload, { qos: 1, retain: true });
+      });
+    });
+    POLL.voters.forEach(function (v) { apply(v.h, null, ts); });
   });
 </script>
 </body>
