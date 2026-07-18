@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>실시간 팀 투표 결과</title>
+<title>청렴 슬로건 공모 현황</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -27,83 +27,100 @@
   }
   .chart { flex: 1; min-width: 420px; }
   .top { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
-  h1 { font-size: 42px; line-height: 1.25; }
-  #part { font-size: 22px; color: #9aa0b4; }
-  #part b { color: #f2f3f8; font-size: 30px; }
+  h1 { font-size: 40px; line-height: 1.25; }
+  .phasePill {
+    font-size: 15px; font-weight: 700; border-radius: 999px; padding: 6px 16px;
+    background: rgba(255, 255, 255, .1); color: #c6cad9;
+  }
+  .phasePill.live { background: #14532d; color: #86efac; }
+  #part { font-size: 20px; color: #9aa0b4; }
+  #part b { color: #f2f3f8; font-size: 26px; }
   #status { font-size: 14px; color: #9aa0b4; margin-top: 10px; display: flex; align-items: center; gap: 7px; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: #f0b429; flex-shrink: 0; }
   .dot.on { background: #22c55e; }
-  #rows { margin-top: 28px; }
-  .row { margin-bottom: 22px; border-radius: 14px; padding: 10px 14px; transition: background .5s; }
-  .row.flash { background: rgba(255, 255, 255, .10); transition: none; }
-  .label { font-size: 26px; display: flex; justify-content: space-between; align-items: baseline; }
-  .label .cnt { font-size: 22px; color: #c6cad9; font-variant-numeric: tabular-nums; }
-  .track {
-    background: rgba(255, 255, 255, .07); border-radius: 12px; height: 44px;
-    overflow: hidden; margin-top: 10px;
+  #content { margin-top: 26px; }
+
+  /* 접수 단계: 갤러리 */
+  .ggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .gcard {
+    background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 16px; padding: 18px 20px;
   }
-  .fill {
-    height: 100%; border-radius: 12px; width: 0%;
-    transition: width .6s cubic-bezier(.22, 1, .36, 1);
+  .gcard .txt { font-size: 19px; line-height: 1.55; font-weight: 600; }
+  .gcard .meta { margin-top: 10px; }
+  .chip { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 11px; color: #fff; }
+
+  /* 투표/마감 단계: 순위 */
+  .rrow {
+    display: flex; align-items: center; gap: 14px;
+    background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 14px; padding: 12px 16px; margin-bottom: 10px;
+    transition: background .5s;
   }
-  #waiting { max-width: 1320px; margin: 0 auto; padding: 0 32px 8px; font-size: 14px; color: #6f7488; }
-  .foot {
-    max-width: 1320px; margin: 0 auto; padding: 0 32px 30px;
-    display: none; justify-content: flex-end;
-  }
-  #reset {
-    background: none; border: 1px solid #33374a; color: #6f7488; border-radius: 9px;
-    padding: 7px 14px; font-size: 12px; cursor: pointer; font-family: inherit;
-  }
-  #reset:hover { color: #c6cad9; border-color: #6f7488; }
+  .rrow.flash { background: rgba(255, 255, 255, .12); transition: none; }
+  .rrow.winner { border-color: #eab308; background: rgba(234, 179, 8, .08); }
+  .rank { font-size: 20px; font-weight: 700; color: #9aa0b4; width: 34px; text-align: center; flex-shrink: 0; }
+  .rrow.winner .rank { color: #facc15; }
+  .rbody { flex: 1; min-width: 0; }
+  .rtxt { font-size: 19px; font-weight: 600; line-height: 1.4; }
+  .rmeta { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .rtrack { flex: 1; background: rgba(255, 255, 255, .07); border-radius: 8px; height: 12px; overflow: hidden; }
+  .rfill { height: 100%; border-radius: 8px; width: 0%; transition: width .6s cubic-bezier(.22, 1, .36, 1); }
+  .rcnt { font-size: 17px; color: #c6cad9; font-variant-numeric: tabular-nums; width: 52px; text-align: right; flex-shrink: 0; }
+  #waiting { max-width: 1320px; margin: 0 auto; padding: 10px 32px 30px; font-size: 14px; color: #6f7488; }
+  .empty { color: #6f7488; font-size: 16px; padding: 20px 4px; }
   @media (max-width: 760px) {
     .wrap { flex-direction: column; align-items: center; padding: 24px 18px 12px; gap: 22px; }
     .chart { min-width: 0; width: 100%; }
-    h1 { font-size: 27px; }
-    #part { font-size: 16px; } #part b { font-size: 21px; }
-    .label { font-size: 19px; } .label .cnt { font-size: 16px; }
-    .track { height: 34px; }
+    h1 { font-size: 26px; }
+    .rtxt { font-size: 16px; }
+    .gcard .txt { font-size: 16px; }
     .qrcard { width: 220px; padding: 18px 18px 14px; }
     .qrcard h2 { font-size: 14px; }
-    #waiting, .foot { padding-left: 18px; padding-right: 18px; }
+    #waiting { padding-left: 18px; padding-right: 18px; }
   }
+  [hidden] { display: none; }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="qrcard">
-      <h2>📱 이 결과판, 폰으로도<br>실시간으로 볼 수 있어요</h2>
+      <h2>📱 이 현황판, 폰으로도<br>실시간으로 볼 수 있어요</h2>
       <div id="qr"></div>
       <div class="url" id="boardUrl"></div>
     </div>
     <div class="chart">
       <div class="top">
         <h1 id="q"></h1>
-        <span id="part">제출 <b>0</b><span id="partTotal"></span></span>
+        <span class="phasePill" id="phasePill">불러오는 중</span>
+        <span id="part" hidden>제출 <b>0</b><span id="partTotal"></span></span>
       </div>
       <div id="status"><span class="dot" id="dot"></span><span id="statusText">연결 중…</span></div>
-      <div id="rows"></div>
+      <div id="content">
+        <div id="gallery" hidden></div>
+        <div id="ranking" hidden></div>
+      </div>
     </div>
   </div>
   <div id="waiting"></div>
-  <div class="foot" id="foot"><button id="reset">전체 초기화</button></div>
 
-<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="config.js"></script>
 <script>
-  var TOPIC = POLL.id + "/ballot/+";
   var COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ec4899", "#38bdf8", "#f97316"];
 
   document.getElementById("q").textContent = POLL.title;
   document.getElementById("partTotal").textContent = " / " + POLL.voters.length + "명";
 
   var teamByKey = {};
-  POLL.teams.forEach(function (t) { teamByKey[t.key] = t; });
-  var voterByH = {};
-  POLL.voters.forEach(function (v) { voterByH[v.h] = v; });
+  var teamColor = {};
+  POLL.teams.forEach(function (t, i) {
+    teamByKey[t.key] = t;
+    teamColor[t.key] = COLORS[i % COLORS.length];
+  });
 
-  // ----- 이 결과판 자체를 가리키는 QR (?admin= 등 쿼리는 제외하고 공유) -----
   var boardUrl = location.href.split("?")[0].split("#")[0];
   new QRCode(document.getElementById("qr"), {
     text: boardUrl, width: 172, height: 172,
@@ -111,165 +128,226 @@
   });
   document.getElementById("boardUrl").textContent = boardUrl;
 
-  // ----- 관리자 모드: board.html?admin=비밀번호 로 열면 초기화 버튼 표시 -----
-  var adminParam = new URLSearchParams(location.search).get("admin") || "";
-  if (adminParam) {
-    sha16(adminParam).then(function (ah) {
-      if (ah === POLL.adminHash) document.getElementById("foot").style.display = "flex";
-    });
-  }
-
-  // ----- 막대 그래프 -----
-  var rowEls = {};
-  var rows = document.getElementById("rows");
-  POLL.teams.forEach(function (t, i) {
-    var div = document.createElement("div");
-    div.className = "row";
-    var label = document.createElement("div");
-    label.className = "label";
-    var name = document.createElement("span");
-    name.textContent = t.emoji + " " + t.name;
-    var cnt = document.createElement("span");
-    cnt.className = "cnt";
-    cnt.textContent = "0표 (0%)";
-    label.appendChild(name);
-    label.appendChild(cnt);
-    var track = document.createElement("div");
-    track.className = "track";
-    var fill = document.createElement("div");
-    fill.className = "fill";
-    fill.style.background = COLORS[i % COLORS.length];
-    track.appendChild(fill);
-    div.appendChild(label);
-    div.appendChild(track);
-    rows.appendChild(div);
-    rowEls[t.key] = div;
-  });
-
-  // ----- 집계: 브로커의 보존 메시지(사람별 마지막 표)가 진실의 원천 -----
-  //       결과판을 언제 어디서 열어도 브로커가 전체 표를 다시 보내줍니다.
-  //       사람별 상태 = { teams: [...] | null(초기화됨), ts: 시각 } — 최신 ts가 이김
-  var ballots = {};
+  var phase = null;
+  var slogans = {};    // sid -> {text, team, ts}
+  var ballots = {};    // h -> [sid, sid] | null
   var prevCounts = {};
+  var rowNodes = {};   // sid -> {row, rank, txt, chip, fill, cnt}
 
-  function apply(h, teams, ts) {
-    var cur = ballots[h];
-    if (cur && cur.ts >= ts) return;
-    ballots[h] = { teams: teams, ts: ts };
-    recount();
-  }
+  var galleryEl = document.getElementById("gallery");
+  var rankingEl = document.getElementById("ranking");
 
-  function recount() {
-    var counts = {};
-    POLL.teams.forEach(function (t) { counts[t.key] = 0; });
-    var submitted = 0;
-    POLL.voters.forEach(function (v) {
-      var b = ballots[v.h];
-      if (!b || !b.teams) return;
-      submitted++;
-      b.teams.forEach(function (k) { counts[k]++; });
-    });
-    var total = submitted * POLL.maxPicks;
-    POLL.teams.forEach(function (t) {
-      var c = counts[t.key];
-      var pct = total ? (c / total) * 100 : 0;
-      var el = rowEls[t.key];
-      el.querySelector(".fill").style.width = pct + "%";
-      el.querySelector(".cnt").textContent = c + "표 (" + Math.round(pct) + "%)";
-      if (prevCounts[t.key] !== undefined && prevCounts[t.key] !== c) flash(t.key);
-      prevCounts[t.key] = c;
-    });
-    document.querySelector("#part b").textContent = submitted;
-
-    var missing = POLL.voters.filter(function (v) {
-      var b = ballots[v.h];
-      return !b || !b.teams;
-    });
-    var w = document.getElementById("waiting");
-    if (missing.length === 0) w.textContent = "🎉 전원 제출 완료!";
-    else if (missing.length === POLL.voters.length) w.textContent = "";
-    else w.textContent = "미제출: " + missing.map(function (v) { return v.name; }).join(", ");
-  }
-  recount();
-
-  function flash(key) {
-    var el = rowEls[key];
-    el.classList.add("flash");
-    setTimeout(function () { el.classList.remove("flash"); }, 80);
-  }
-
-  // ----- 메시지 검증: 표는 토큰 해시 = 토픽 일치해야 인정, 초기화는 관리자 해시 확인 -----
-  function onMsg(topic, payload) {
-    var h = topic.split("/").pop();
-    var voter = voterByH[h];
-    if (!voter) return;                          // 명단에 없는 토픽 무시
-    if (!payload || payload.length === 0) return; // 빈 메시지는 상태 변경 없음
-    var m;
-    try { m = JSON.parse(payload.toString()); } catch (e) { return; }
-    if (!m || !validTs(m.ts)) return;
-
-    if (m.reset === true && typeof m.a === "string") {
-      sha16(m.a).then(function (ah) {
-        if (ah !== POLL.adminHash) return;       // 가짜 초기화 무시
-        apply(h, null, m.ts);
-      });
-      return;
-    }
-
-    if (typeof m.token !== "string" || !validTeams(m.teams, voter.team)) return;
-    sha16(m.token).then(function (th) {
-      if (th !== h) return;                      // 토큰 증명 불일치 → 위조 표 무시
-      apply(h, m.teams, m.ts);
-    });
-  }
-
-  // ----- 실시간 연결: 두 브로커 모두 구독 -----
   function setStatus(text, on) {
     document.getElementById("statusText").textContent = text;
     document.getElementById("dot").className = on ? "dot on" : "dot";
   }
 
-  var links = [];
-  function updateStatus() {
-    var up = links.some(function (x) { return x.up; });
-    if (up) setStatus("실시간 연결됨 — 표를 기다리는 중", true);
-    else setStatus("연결 중…", false);
+  function teamLabel(teamKey) {
+    var team = teamByKey[teamKey];
+    return team ? team.emoji + " " + team.name : teamKey;
   }
-  POLL.brokers.forEach(function (url) {
-    var entry = { up: false, client: null };
-    links.push(entry);
-    var c = mqtt.connect(url, {
-      clientId: "qb_" + Math.random().toString(16).slice(2, 10),
-      connectTimeout: 8000,
-      reconnectPeriod: 5000,
-      clean: true,
+
+  // ----- 접수 단계: 갤러리 (제출이 잦지 않아 통째로 다시 그려도 무방) -----
+  function renderGallery() {
+    galleryEl.innerHTML = "";
+    var ids = Object.keys(slogans).sort(function (a, b) {
+      return (slogans[b].ts || 0) - (slogans[a].ts || 0);
     });
-    entry.client = c;
-    c.on("connect", function () {
-      entry.up = true;
-      c.subscribe(TOPIC, { qos: 1 });
-      updateStatus();
+    if (ids.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "아직 제출된 문구가 없습니다 — 첫 번째 주인공이 되어보세요!";
+      galleryEl.appendChild(empty);
+      return;
+    }
+    var grid = document.createElement("div");
+    grid.className = "ggrid";
+    ids.forEach(function (sid) {
+      var card = document.createElement("div");
+      card.className = "gcard";
+      var txt = document.createElement("div");
+      txt.className = "txt";
+      txt.textContent = "“" + slogans[sid].text + "”";
+      var meta = document.createElement("div");
+      meta.className = "meta";
+      var chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = teamLabel(slogans[sid].team);
+      chip.style.background = teamColor[slogans[sid].team] || "#8a90a3";
+      meta.appendChild(chip);
+      card.appendChild(txt);
+      card.appendChild(meta);
+      grid.appendChild(card);
     });
-    c.on("close", function () {
-      if (entry.up) { entry.up = false; updateStatus(); }
+    galleryEl.appendChild(grid);
+  }
+
+  // ----- 투표/마감: 순위 (막대가 이전 값에서 부드럽게 이동하도록 행을 유지·갱신) -----
+  function createRow() {
+    var row = document.createElement("div");
+    row.className = "rrow";
+    var rank = document.createElement("div");
+    rank.className = "rank";
+    var body = document.createElement("div");
+    body.className = "rbody";
+    var txt = document.createElement("div");
+    txt.className = "rtxt";
+    var meta = document.createElement("div");
+    meta.className = "rmeta";
+    var chip = document.createElement("span");
+    chip.className = "chip";
+    var track = document.createElement("div");
+    track.className = "rtrack";
+    var fill = document.createElement("div");
+    fill.className = "rfill";
+    track.appendChild(fill);
+    meta.appendChild(chip);
+    meta.appendChild(track);
+    body.appendChild(txt);
+    body.appendChild(meta);
+    var cnt = document.createElement("div");
+    cnt.className = "rcnt";
+    row.appendChild(rank);
+    row.appendChild(body);
+    row.appendChild(cnt);
+    return { row: row, rank: rank, txt: txt, chip: chip, fill: fill, cnt: cnt };
+  }
+
+  function renderRanking() {
+    var ids = Object.keys(slogans);
+    var counts = {};
+    ids.forEach(function (sid) { counts[sid] = 0; });
+    var submittedCnt = 0;
+    POLL.voters.forEach(function (v) {
+      var b = ballots[v.h];
+      if (!b) return;
+      submittedCnt++;
+      b.forEach(function (sid) { if (counts[sid] !== undefined) counts[sid]++; });
     });
-    c.on("error", function () { /* 재연결은 mqtt.js가 알아서 반복 */ });
-    c.on("message", onMsg);
+    document.querySelector("#part b").textContent = submittedCnt;
+
+    ids.sort(function (a, b) {
+      return (counts[b] - counts[a]) || ((slogans[a].ts || 0) - (slogans[b].ts || 0));
+    });
+    var maxCnt = 0;
+    ids.forEach(function (sid) { if (counts[sid] > maxCnt) maxCnt = counts[sid]; });
+
+    // 사라진 문구 행 제거
+    Object.keys(rowNodes).forEach(function (sid) {
+      if (!slogans[sid]) {
+        if (rowNodes[sid].row.parentNode) rowNodes[sid].row.parentNode.removeChild(rowNodes[sid].row);
+        delete rowNodes[sid];
+        delete prevCounts[sid];
+      }
+    });
+
+    // 행 생성·갱신 (제자리 업데이트 → 막대 애니메이션 유지)
+    ids.forEach(function (sid, i) {
+      var n = rowNodes[sid];
+      if (!n) { n = createRow(); rowNodes[sid] = n; }
+      var isWinner = (phase === "closed" && maxCnt > 0 && counts[sid] === maxCnt);
+      n.row.className = "rrow" + (isWinner ? " winner" : "");
+      n.rank.textContent = isWinner ? "👑" : (i + 1);
+      n.txt.textContent = "“" + slogans[sid].text + "”";
+      n.chip.textContent = teamLabel(slogans[sid].team);
+      n.chip.style.background = teamColor[slogans[sid].team] || "#8a90a3";
+      n.cnt.textContent = counts[sid] + "표";
+      n.fill.style.background = teamColor[slogans[sid].team] || "#8a90a3";
+      n.fill.style.width = (maxCnt ? (counts[sid] / maxCnt) * 100 : 0) + "%";
+      if (prevCounts[sid] !== undefined && prevCounts[sid] !== counts[sid]) {
+        n.row.classList.add("flash");
+        (function (row) { setTimeout(function () { row.classList.remove("flash"); }, 80); })(n.row);
+      }
+      prevCounts[sid] = counts[sid];
+    });
+
+    // 정렬 순서대로 DOM 재배치 (노드를 옮기는 것이라 진행 중인 전환은 유지됨)
+    ids.forEach(function (sid) { rankingEl.appendChild(rowNodes[sid].row); });
+
+    var waiting = document.getElementById("waiting");
+    if (phase === "vote") {
+      var missing = POLL.voters.filter(function (v) { return !ballots[v.h]; });
+      if (missing.length === 0) waiting.textContent = "🎉 전원 제출 완료!";
+      else if (missing.length < POLL.voters.length)
+        waiting.textContent = "미제출: " + missing.map(function (v) { return v.name; }).join(", ");
+      else waiting.textContent = "";
+    } else {
+      waiting.textContent = "";
+    }
+  }
+
+  function render() {
+    var pill = document.getElementById("phasePill");
+    var part = document.getElementById("part");
+    var waiting = document.getElementById("waiting");
+
+    if (!phase) {
+      pill.textContent = "불러오는 중"; pill.className = "phasePill";
+      part.hidden = true; galleryEl.hidden = true; rankingEl.hidden = true;
+      waiting.textContent = "";
+      return;
+    }
+
+    if (phase === "collect") {
+      pill.textContent = "📝 슬로건 접수 중"; pill.className = "phasePill live";
+      part.hidden = true; rankingEl.hidden = true; galleryEl.hidden = false;
+      renderGallery();
+      var perTeam = {};
+      POLL.teams.forEach(function (t) { perTeam[t.key] = 0; });
+      Object.keys(slogans).forEach(function (sid) {
+        var k = slogans[sid].team;
+        if (perTeam[k] !== undefined) perTeam[k]++;
+      });
+      waiting.textContent = "팀별 접수: " + POLL.teams.map(function (t) {
+        return t.name + " " + perTeam[t.key] + "건";
+      }).join(" · ");
+      return;
+    }
+
+    // vote / closed
+    pill.textContent = phase === "vote" ? "🗳️ 투표 진행 중" : "🏁 투표 마감 — 최종 결과";
+    pill.className = phase === "vote" ? "phasePill live" : "phasePill";
+    part.hidden = false; galleryEl.hidden = true; rankingEl.hidden = false;
+    renderRanking();
+  }
+  render();
+
+  // ----- Firebase 실시간 구독 -----
+  firebase.initializeApp(POLL.firebase);
+  var db = firebase.database();
+  var base = "polls/" + POLL.id;
+
+  db.ref(".info/connected").on("value", function (snap) {
+    if (snap.val() === true) setStatus("실시간 연결됨", true);
+    else setStatus("연결 중…", false);
   });
 
-  // ----- 전체 초기화 (관리자 전용): 타임스탬프 묘비를 모든 브로커·전원에게 저장 -----
-  document.getElementById("reset").addEventListener("click", function () {
-    if (!confirm("모든 표를 삭제하고 처음부터 다시 시작할까요?\n(모든 사람의 제출 내역이 사라집니다)")) return;
-    var ts = Date.now();
-    var payload = JSON.stringify({ reset: true, a: adminParam, ts: ts });
-    links.forEach(function (entry) {
-      if (!entry.client) return;
-      // 연결이 잠시 끊긴 브로커에도 보냄 — mqtt.js가 재연결 시 전송
-      POLL.voters.forEach(function (v) {
-        entry.client.publish(POLL.id + "/ballot/" + v.h, payload, { qos: 1, retain: true });
-      });
+  db.ref(base + "/state/phase").on("value", function (snap) {
+    phase = snap.val();
+    render();
+  }, function () {
+    setStatus("읽기 권한 오류 — 보안 규칙이 게시됐는지 확인하세요", false);
+  });
+
+  db.ref(base + "/sloganList").on("value", function (snap) {
+    slogans = snap.val() || {};
+    render();
+  }, function () {
+    setStatus("읽기 권한 오류 — 보안 규칙이 게시됐는지 확인하세요", false);
+  });
+
+  POLL.voters.forEach(function (v) {
+    db.ref(base + "/ballots/" + v.h + "/vote").on("value", function (snap) {
+      var val = snap.val();
+      if (val && val.picks && typeof val.picks.a === "string") {
+        ballots[v.h] = [val.picks.a, val.picks.b];
+      } else {
+        ballots[v.h] = null;
+      }
+      render();
+    }, function () {
+      setStatus("읽기 권한 오류 — 보안 규칙이 게시됐는지 확인하세요", false);
     });
-    POLL.voters.forEach(function (v) { apply(v.h, null, ts); });
   });
 </script>
 </body>

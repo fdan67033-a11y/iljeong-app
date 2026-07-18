@@ -1,186 +1,95 @@
-# Firebase 전환 가이드
+# Firebase 구조·운영 문서
 
-현재 시스템은 공개 MQTT 브로커의 보존 메시지에 표를 저장합니다. 이 문서는 저장소를
-Firebase Realtime Database(RTDB)로 바꾸는 방법을 단계별로 정리한 것입니다.
+이 시스템은 Firebase Realtime Database(프로젝트 `project-team-vote`, 싱가포르 리전)를
+저장소로 사용합니다. 제출·투표의 검증(위조·중복·자기 팀 투표 차단, 단계 강제)은 전부
+서버 보안 규칙이 수행하므로, 페이지 소스나 DB를 들여다봐도 조작할 수 없습니다.
 
-## 왜 전환하나
-
-| 항목 | 지금 (공개 MQTT) | 전환 후 (Firebase) |
-|---|---|---|
-| 표 보관 | 브로커 선의에 의존, 영구 보관 보장 없음 | 구글 서버에 영구 저장 |
-| 위조 방어 | 페이지 소스만으론 불가, 채널 도청 후엔 가능 | 서버 규칙이 개인 코드 대조 — 도청 자체가 불가(https) |
-| 규칙 집행 (1인 3표, 자기 팀 금지) | 결과판 쪽 클라이언트 검증 | 서버가 저장 자체를 거부 |
-| 안정성 | 무료 공용 브로커 (가끔 느리거나 접속 거부) | 구글 인프라 |
-| 외부인 방해 | 채널 이름을 알면 쓰레기 메시지 투척 가능 | 규칙으로 차단 |
-| 비용 | 0원 | 0원 (Spark 무료 플랜으로 충분) |
-
-## 전환해도 그대로인 것
-
-- **QR 카드와 개인 코드** — 그대로 사용 (다시 인쇄할 필요 없음)
-- 페이지 구조 (index.html / board.html / config.js), GitHub Pages 호스팅, 화면 디자인
-- 사용 흐름: QR 스캔 → 3팀 선택 → 제출 → 결과판 실시간 반영/상시 복원
-
-바뀌는 것은 "표를 어디에 저장하고 누가 검증하느냐"뿐입니다.
-
-## 데이터 구조 (RTDB)
+## 데이터 구조
 
 ```
 polls/
-  teamvote-v2/
-    teams/                 ← 유효한 팀 목록 (규칙 검증용)
+  slogan-2026/
+    state/
+      phase: "collect"|"vote"|"closed"  ← 누구나 읽음, 쓰기는 콘솔(관리자 구글 로그인)만
+    teams/                  ← 유효한 팀 목록 (규칙 검증용)
       t1: true ... t5: true
     voters/
       <해시>/
-        secret: "개인코드"     ← 아무도 못 읽음 (규칙으로 봉인)
-        public/               ← 누구나 읽음
+        secret: "개인코드"    ← 아무도 못 읽음 (규칙으로 봉인)
+        public/              ← 누구나 읽음
           name: "학생01"
           team: "t1"
+    slogans/                ← 제출 원본(제출자 증명 포함) — 아무도 못 읽음
+      <문구ID>/ { proof, h, text, team, ts }
+    sloganList/             ← 공개 사본 (갤러리·투표 대상) — 누구나 읽음
+      <문구ID>/ { text, team, ts }
+        ※ 규칙이 원본(slogans)과 text/team 일치를 검증 — 위조 사본 불가
     ballots/
       <해시>/
-        proof: "개인코드"      ← 못 읽음. 저장 시 secret과 일치해야만 저장됨
-        vote/                 ← 누구나 읽음 (결과판이 구독)
-          picks: { a: "t2", b: "t3", c: "t5" }
-          ts: 1789...
+        proof: "개인코드"     ← 못 읽음. 저장 시 secret과 일치해야만 생성됨
+        vote/                ← 누구나 읽음 (현황판이 구독)
+          picks: { a: "<문구ID>", b: "<문구ID>" }
+          ts: <서버 시각>
 ```
 
-핵심 아이디어: 표를 쓸 때 `proof`에 개인 코드를 담고, 서버 규칙이
-`voters/<해시>/secret`과 비교해서 일치할 때만 저장을 허락합니다.
-개인 코드는 서버 안에서만 비교되고 아무도 읽을 수 없으므로, DB를 통째로
-들여다봐도 남의 표를 위조할 수 없습니다.
+## 핵심 설계 네 가지
 
-## 1단계 — Firebase 프로젝트 만들기 (5분, 구글 계정 필요)
+1. **증명 기반 저장**: 문구 제출과 투표 모두 `proof`에 개인 코드를 담아야 하고,
+   서버 규칙이 `voters/<해시>/secret`과 대조해 일치할 때만 저장합니다.
+   secret과 proof는 읽기 권한이 없어 외부로 새지 않습니다.
+2. **단계(phase) 강제**: 문구 제출은 collect 단계에만, 투표는 vote 단계에만
+   서버가 허용합니다. `state/phase`는 클라이언트가 쓸 수 없고(규칙상 쓰기 없음),
+   오직 Firebase 콘솔(관리자 구글 로그인 = 규칙 우회)에서만 변경됩니다. 데이터에 저장한
+   비밀키로 클라이언트 쓰기를 막는 방식은 부분 쓰기가 기존 값을 물려받아 뚫리므로 채택하지
+   않았습니다. admin.html은 열람 전용 대시보드이며, 콘솔의 phase 노드로 가는 바로가기를 제공합니다.
+3. **1회 제출 확정(불변)**: 이미 표가 있으면(`data.exists()`) 어떤 쓰기도 거부합니다.
+   "수정 허용" 규칙은 부분 업데이트로 기존 proof를 상속받아 남의 picks만 바꿔치기하는
+   공격이 가능해서 의도적으로 막았습니다. 재투표는 관리자가 콘솔에서 표 삭제로 허용.
+4. **문구 이중 저장**: 제출 원본(slogans, 제출자 증명 포함)은 비공개, 갤러리·투표가
+   읽는 공개 사본(sloganList)은 규칙이 원본과 내용 일치를 검증합니다 — 제안자 익명을
+   유지하면서 위조 등록을 차단.
 
-1. https://console.firebase.google.com 접속 → 구글 로그인
-2. "프로젝트 추가" → 이름 예: `team-vote` → Google Analytics **사용 안 함** → 만들기
-3. 요금제는 기본 Spark(무료) 그대로 두면 됩니다. 카드 등록 불필요.
+## 보안 규칙 (콘솔 → Realtime Database → 규칙 탭에 전문 붙여넣기)
 
-## 2단계 — Realtime Database 만들기
+원본 파일: 관리자 PC의 `C:\todo_manual_dashboard\firebase-rules.json`
 
-1. 왼쪽 메뉴 빌드 → **Realtime Database** → "데이터베이스 만들기"
-2. 위치: `asia-southeast1` (싱가포르 — 한국에서 가장 가까움)
-3. 보안 규칙: **잠금 모드로 시작** 선택
-4. 생성되면 상단에 뜨는 DB 주소를 메모:
-   `https://<프로젝트명>-default-rtdb.asia-southeast1.firebasedatabase.app`
+규칙이 강제하는 것:
+- 단계(state/phase)는 클라이언트 쓰기 불가 — 콘솔에서만 변경(구글 로그인)
+- 문구는 collect 단계에만, 1~60자, 제출자 소속 팀으로만 등록 가능
+- 표 생성은 vote 단계에만, proof 일치 시 **최초 1회만**
+- picks는 a·b 두 슬롯, 서로 다른 문구, 실존하는 문구, **본인 팀 문구 제외**
+- 허용된 필드 외에는 저장 불가(`$other: false`), secret/proof/원본 slogans는 조회 불가
+- 삭제는 규칙을 우회하는 콘솔 관리자만 가능
 
-## 3단계 — 웹 앱 등록
+## 명단(시드) 넣기
 
-1. 프로젝트 개요 옆 톱니바퀴 → 프로젝트 설정 → 아래 "내 앱" → 웹(`</>`) 아이콘
-2. 앱 닉네임 아무거나 → 등록 (호스팅 체크 불필요 — GitHub Pages 계속 씀)
-3. 화면에 나오는 `firebaseConfig` 값(apiKey, databaseURL 등)을 복사해 둡니다.
-   ※ 이 값은 비밀이 아니라 공개해도 되는 접속 주소입니다. 보안은 규칙이 담당.
+원본 파일: 관리자 PC의 `C:\todo_manual_dashboard\firebase-seed.json`
 
-## 4단계 — 명단(시드 데이터) 넣기
+콘솔 → Realtime Database → 데이터 탭 → 루트(DB 주소 줄) 오른쪽 ⋮ → **JSON 가져오기**
+→ 파일 선택. `polls/slogan-2026` 아래에 state/teams/voters가 들어가면 성공.
+※ 가져오기는 해당 위치를 통째로 교체하므로, 진행 중(문구·표 존재)에는 하지 말 것.
 
-관리자 PC의 `firebase-seed.json` 파일(개인 코드 포함 — 저장소에 올리지 말 것)을 사용:
+## 운영
 
-1. Realtime Database → 데이터 탭 → 루트에 `polls` → `teamvote-v2` 경로를 만들거나,
-   루트에서 ⋮ 메뉴 → **JSON 가져오기**로 파일을 통째로 업로드
-2. 업로드 후 `polls/teamvote-v2/voters/<해시>/secret`에 개인 코드가 들어있는지 확인
+| 작업 | 방법 |
+|---|---|
+| 단계 전환 (접수→투표→마감) | 콘솔 데이터탭에서 `polls/slogan-2026/state/phase` 값을 collect→vote→closed로 편집 (admin.html에 바로가기 버튼) |
+| 부적절한 문구 삭제 | 콘솔에서 `polls/slogan-2026/sloganList/<항목>` 삭제 |
+| 한 사람 재투표 허용 | 콘솔에서 `polls/slogan-2026/ballots/<해시>` 삭제 (해시는 config.js에서 이름으로 검색) |
+| 전체 표 초기화 | 콘솔에서 `polls/slogan-2026/ballots` 노드 삭제 |
+| 새 공모 | config.js의 id 변경 + 시드 JSON을 새 경로에 가져오기 |
+| 이름/팀 변경 | config.js·QR카드 파일·DB voters/public 세 곳을 같은 순서로 수정 |
 
-## 5단계 — 보안 규칙 붙여넣기
+## 점검 목록 (리허설)
 
-Realtime Database → 규칙 탭에 아래 전체를 붙여넣고 게시:
-
-```json
-{
-  "rules": {
-    "polls": {
-      "$poll": {
-        "teams": { ".read": true },
-        "voters": {
-          "$h": {
-            "public": { ".read": true }
-          }
-        },
-        "ballots": {
-          "$h": {
-            ".write": "newData.child('proof').isString() && newData.child('proof').val() === root.child('polls/' + $poll + '/voters/' + $h + '/secret').val()",
-            ".validate": "newData.hasChildren(['proof', 'vote'])",
-            "vote": {
-              ".read": true,
-              ".validate": "newData.hasChildren(['picks', 'ts']) && newData.child('ts').isNumber()",
-              "picks": {
-                ".validate": "newData.hasChildren(['a', 'b', 'c'])",
-                "a": { ".validate": "newData.isString() && root.child('polls/' + $poll + '/teams/' + newData.val()).exists() && newData.val() !== root.child('polls/' + $poll + '/voters/' + $h + '/public/team').val() && newData.val() !== newData.parent().child('b').val() && newData.val() !== newData.parent().child('c').val()" },
-                "b": { ".validate": "newData.isString() && root.child('polls/' + $poll + '/teams/' + newData.val()).exists() && newData.val() !== root.child('polls/' + $poll + '/voters/' + $h + '/public/team').val() && newData.val() !== newData.parent().child('a').val() && newData.val() !== newData.parent().child('c').val()" },
-                "c": { ".validate": "newData.isString() && root.child('polls/' + $poll + '/teams/' + newData.val()).exists() && newData.val() !== root.child('polls/' + $poll + '/voters/' + $h + '/public/team').val() && newData.val() !== newData.parent().child('a').val() && newData.val() !== newData.parent().child('b').val()" },
-                "$other": { ".validate": false }
-              },
-              "$other": { ".validate": false }
-            },
-            "$other": { ".validate": false }
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-이 규칙이 서버에서 강제하는 것:
-
-- 표 저장은 `proof`(개인 코드)가 서버에 저장된 `secret`과 일치할 때만 가능 → 위조 불가
-- 선택은 정확히 3개 슬롯(a·b·c), 서로 달라야 하고, 존재하는 팀이어야 하며,
-  **본인 소속 팀이면 거부** → 1인 3표·자기 팀 금지가 서버 규칙
-- `secret`/`proof`는 읽기 규칙이 없어서(기본 거부) 아무도 조회 불가
-- 표 삭제(초기화)는 규칙을 우회하는 콘솔 관리자만 가능
-
-## 6단계 — 페이지 코드 교체
-
-바뀌는 부분은 "통신 계층"뿐입니다. 요점:
-
-1. 두 페이지에서 mqtt.js `<script>`를 Firebase SDK로 교체:
-```html
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-```
-2. config.js에 3단계에서 복사한 `firebaseConfig` 추가, brokers 항목 삭제
-3. index.html — 제출 부분을 MQTT publish 대신:
-```js
-firebase.initializeApp(POLL.firebaseConfig);
-var db = firebase.database();
-// 제출 (proof가 secret과 다르면 서버가 거부함)
-db.ref("polls/" + POLL.id + "/ballots/" + myHash).set({
-  proof: token,
-  vote: { picks: { a: picks[0], b: picks[1], c: picks[2] }, ts: firebase.database.ServerValue.TIMESTAMP }
-}).then(성공처리).catch(실패처리);
-// 내 표 복원/초기화 감지 (vote만 읽힘)
-db.ref("polls/" + POLL.id + "/ballots/" + myHash + "/vote").on("value", ...);
-```
-4. board.html — MQTT 구독 대신 사람별 리스너 20개:
-```js
-POLL.voters.forEach(function (v) {
-  db.ref("polls/" + POLL.id + "/ballots/" + v.h + "/vote").on("value", function (snap) {
-    ballots[v.h] = snap.val();   // null이면 미제출/초기화됨
-    recount();
-  });
-});
-// 연결 상태 표시등: db.ref(".info/connected").on("value", ...)
-```
-5. 클라이언트의 해시 대조·묘비 메시지·이중 브로커 코드는 전부 삭제 (서버가 대신함)
-
-## 7단계 — 초기화와 새 투표
-
-- **초기화**: Firebase 콘솔 → 데이터 탭 → `polls/teamvote-v2/ballots` 노드 삭제.
-  모든 결과판/투표 페이지에 즉시 반영됩니다. (?admin= 방식은 더 이상 불필요)
-- **새 투표**: config.js의 id를 `teamvote-v3`으로 바꾸고, 콘솔에서 시드 JSON을
-  `polls/teamvote-v3`에 다시 가져오기
-
-## 점검 목록 (전환 후 리허설)
-
-- [ ] 개인 QR로 접속 → 이름/팀 표시, 자기 팀 잠금
-- [ ] 3팀 제출 → 결과판 즉시 반영
-- [ ] 결과판 새로고침/다른 기기에서 열기 → 집계 복원
-- [ ] 잘못된 코드로 제출 시도(개발자도구에서 proof 조작) → PERMISSION_DENIED
-- [ ] 콘솔에서 ballots 삭제 → 전 화면 0표로, 투표 페이지 "다시 선택" 안내
+- [ ] 개인 QR 접속 → 이름/팀 표시, 접수 단계 화면
+- [ ] 문구 제출 → 갤러리·현황판 즉시 반영, 팀 자동 표시
+- [ ] 관리자 페이지에서 투표 개시 → 모든 화면이 투표 모드로 전환
+- [ ] 자기 팀 문구 잠금, 2개 선택 제출 → 순위 즉시 반영
+- [ ] 같은 사람 재제출 시도 → 거부되는지
+- [ ] 투표 마감 → 👑 확정 표시, 추가 투표 거부
+- [ ] 콘솔에서 표 하나 삭제 → 그 사람 폰에 재투표 안내 뜨는지
 
 ## 비용/한도 (Spark 무료 플랜)
 
-- 동시 접속 100 (20명 투표 + 전원 결과판 시청도 여유), 저장 1GB, 다운로드 10GB/월
-- 이 규모(20명 × 몇 KB)에서는 어떤 한도에도 근접하지 않음 — 결제 정보 등록 불필요
-
-## 역할 분담
-
-- **직접 하셔야 하는 것**: 1~3단계 (구글 로그인이 필요해서), 그리고 4단계의 JSON 가져오기
-- **Claude에게 시키면 되는 것**: firebaseConfig 값을 주시면 4~6단계 코드 전환 전부와
-  규칙 붙여넣을 내용 준비, 배포, 리허설 검증까지
+동시 접속 100(20명 규모는 여유), 저장 1GB, 다운로드 10GB/월 — 결제 등록 불필요.

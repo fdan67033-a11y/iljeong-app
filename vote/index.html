@@ -3,21 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>팀 투표</title>
+<title>청렴 슬로건 공모</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
     background: #f4f5fa; color: #1f2330;
     min-height: 100vh; display: flex; flex-direction: column; align-items: center;
-    padding: 24px 16px;
+    padding: 24px 16px 90px;
   }
   .badge {
     font-size: 13px; font-weight: 600; color: #4f46e5; background: #e8e7fd;
     border-radius: 999px; padding: 5px 14px;
   }
   h1 { font-size: 23px; margin: 14px 0 4px; text-align: center; line-height: 1.4; }
-  .sub { font-size: 13px; color: #8a90a3; text-align: center; }
+  .sub { font-size: 13px; color: #8a90a3; text-align: center; max-width: 440px; line-height: 1.6; }
   .me { font-size: 14px; margin-top: 10px; color: #4f46e5; font-weight: 600; }
   #status { font-size: 13px; color: #8a90a3; margin: 8px 0 12px; display: flex; align-items: center; gap: 6px; }
   #status[hidden] { display: none; }
@@ -25,110 +25,147 @@
   .dot.on { background: #22c55e; }
   #notice {
     background: #fdf3e2; border: 1px solid #f0d5a0; color: #7a5a12; border-radius: 12px;
-    padding: 10px 14px; font-size: 13px; margin-bottom: 12px; max-width: 440px; width: 100%;
+    padding: 10px 14px; font-size: 13px; margin-bottom: 12px; max-width: 480px; width: 100%;
     text-align: center;
   }
-  #list { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 440px; }
-  #list[hidden] { display: none; }
-  button.team {
-    background: #fff; border: 2px solid #e4e6ef; border-radius: 16px;
-    padding: 16px 18px; cursor: pointer; text-align: left;
-    display: flex; align-items: center; gap: 14px;
-    font-family: inherit; font-size: 18px; font-weight: 600; color: #1f2330;
-    transition: border-color .15s, background .15s;
+  .section { width: 100%; max-width: 480px; }
+  .formCard {
+    background: #fff; border: 2px solid #e4e6ef; border-radius: 18px; padding: 18px;
+    margin-bottom: 20px;
   }
-  button.team .e { font-size: 30px; line-height: 1; }
-  button.team .mark {
-    margin-left: auto; width: 26px; height: 26px; border-radius: 50%;
+  .formCard textarea {
+    width: 100%; border: 1px solid #d4d7e3; border-radius: 12px; padding: 12px;
+    font-family: inherit; font-size: 16px; resize: none; height: 76px; outline-color: #4f46e5;
+  }
+  .formRow { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  #charCnt { font-size: 12px; color: #8a90a3; }
+  #sloganSubmit {
+    background: #4f46e5; color: #fff; border: none; border-radius: 10px;
+    padding: 10px 20px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  }
+  #sloganSubmit:disabled { background: #c7c5f4; cursor: default; }
+  h2 { font-size: 15px; color: #8a90a3; font-weight: 600; margin: 6px 2px 10px; }
+  .gallery { display: flex; flex-direction: column; gap: 10px; }
+  .scard {
+    background: #fff; border: 2px solid #e4e6ef; border-radius: 16px; padding: 14px 16px;
+    text-align: left; width: 100%; font-family: inherit; display: block;
+  }
+  .scard .txt { font-size: 16px; line-height: 1.55; font-weight: 600; color: #1f2330; }
+  .scard .metaRow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .chip { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 10px; color: #fff; }
+  .mineTag { font-size: 12px; color: #d85a30; font-weight: 600; }
+  button.scard { cursor: pointer; transition: border-color .15s, background .15s; }
+  button.scard:not(:disabled):hover { border-color: #4f46e5; }
+  button.scard.sel { border-color: #4f46e5; background: #f4f3ff; }
+  button.scard.mine { opacity: .55; cursor: not-allowed; }
+  .mark {
+    margin-left: auto; width: 24px; height: 24px; border-radius: 50%;
     border: 2px solid #d4d7e3; display: flex; align-items: center; justify-content: center;
-    font-size: 15px; color: #fff; flex-shrink: 0;
+    font-size: 14px; color: #fff; flex-shrink: 0;
   }
-  button.team.sel { border-color: #4f46e5; background: #f4f3ff; }
-  button.team.sel .mark { background: #4f46e5; border-color: #4f46e5; }
-  button.team.mine { opacity: .5; cursor: not-allowed; }
-  button.team.mine .tag { margin-left: auto; font-size: 12px; color: #d85a30; font-weight: 600; }
-  button.team:disabled { cursor: not-allowed; }
-  #submitWrap { width: 100%; max-width: 440px; margin-top: 16px; }
-  #submitWrap[hidden] { display: none; }
-  #picked { font-size: 13px; color: #8a90a3; text-align: center; margin-bottom: 10px; }
-  #submit {
-    width: 100%; background: #4f46e5; color: #fff; border: none; border-radius: 14px;
-    padding: 16px; font-size: 17px; font-weight: 700; cursor: pointer; font-family: inherit;
+  .sel .mark { background: #4f46e5; border-color: #4f46e5; }
+  #voteBar {
+    position: fixed; left: 0; right: 0; bottom: 0; background: #fff;
+    border-top: 1px solid #e4e6ef; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: center; gap: 16px;
   }
-  #submit:disabled { background: #c7c5f4; cursor: default; }
-  #done {
+  #voteBar[hidden] { display: none; }
+  #picked { font-size: 14px; color: #8a90a3; }
+  #voteSubmit {
+    background: #4f46e5; color: #fff; border: none; border-radius: 12px;
+    padding: 13px 26px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  #voteSubmit:disabled { background: #c7c5f4; cursor: default; }
+  .bigCard {
     background: #fff; border-radius: 20px; padding: 32px 26px; text-align: center;
-    width: 100%; max-width: 440px; border: 2px solid #e4e6ef; margin-top: 4px;
+    width: 100%; max-width: 480px; border: 2px solid #e4e6ef; margin-top: 4px;
   }
-  #done .big { font-size: 52px; margin-bottom: 10px; }
-  #done p { font-size: 16px; margin: 4px 0; }
-  #done .picks { font-size: 18px; font-weight: 700; margin: 10px 0; line-height: 1.7; }
-  #done .muted { font-size: 13px; color: #8a90a3; margin-top: 6px; }
-  .doneBtns { display: flex; gap: 10px; margin-top: 20px; justify-content: center; flex-wrap: wrap; }
-  .doneBtns a, .doneBtns button {
-    border-radius: 10px; padding: 11px 18px; font-size: 14px; cursor: pointer;
-    font-family: inherit; text-decoration: none;
+  .bigCard .big { font-size: 52px; margin-bottom: 10px; }
+  .bigCard p { font-size: 16px; margin: 4px 0; }
+  .bigCard .picksList { font-size: 16px; font-weight: 700; margin: 12px 0; line-height: 1.8; }
+  .bigCard .muted { font-size: 13px; color: #8a90a3; margin-top: 6px; line-height: 1.6; }
+  .goBoard {
+    display: inline-block; margin-top: 18px; border-radius: 10px; padding: 11px 18px;
+    font-size: 14px; text-decoration: none; background: #4f46e5; color: #fff; font-weight: 600;
   }
-  #goBoard { background: #4f46e5; color: #fff; border: none; font-weight: 600; }
-  #edit { background: none; border: 1px solid #d4d7e3; color: #8a90a3; }
-  #err {
-    background: #fff; border: 2px solid #f0d5cd; border-radius: 20px; padding: 32px 26px;
-    text-align: center; max-width: 440px; margin-top: 20px;
-  }
-  #err h2 { font-size: 19px; margin-bottom: 8px; }
+  #err h2 { font-size: 19px; margin-bottom: 8px; color: #1f2330; }
   #err p { font-size: 14px; color: #8a90a3; line-height: 1.6; }
   footer { margin-top: auto; padding-top: 26px; font-size: 12px; color: #b6bac9; }
   [hidden] { display: none; }
 </style>
 </head>
 <body>
-  <div class="badge">📡 실시간 팀 투표</div>
+  <div class="badge">🏛️ 청렴 세정</div>
   <h1 id="q"></h1>
-  <div class="sub" id="sub"></div>
+  <div class="sub" id="sub">불러오는 중…</div>
   <div class="me" id="me" hidden></div>
   <div id="status"><span class="dot" id="dot"></span><span id="statusText">연결 중…</span></div>
   <div id="notice" hidden></div>
 
-  <div id="list" hidden></div>
-  <div id="submitWrap" hidden>
-    <div id="picked"></div>
-    <button id="submit" disabled>투표 제출</button>
+  <div class="section" id="phaseCollect" hidden>
+    <div class="formCard">
+      <textarea id="sloganInput" maxlength="60" placeholder="예: 공정하게 부과하고, 투명하게 안내하겠습니다"></textarea>
+      <div class="formRow">
+        <span id="charCnt">0 / 60자</span>
+        <button id="sloganSubmit" disabled>문구 제출</button>
+      </div>
+    </div>
+    <h2 id="galleryCTitle">제출된 슬로건</h2>
+    <div class="gallery" id="galleryC"></div>
   </div>
 
-  <div id="done" hidden>
+  <div class="section" id="phaseVote" hidden>
+    <div class="gallery" id="galleryV"></div>
+  </div>
+  <div id="voteBar" hidden>
+    <span id="picked"></span>
+    <button id="voteSubmit" disabled>투표 제출 (최종)</button>
+  </div>
+
+  <div class="bigCard" id="phaseClosed" hidden>
+    <div class="big">🏁</div>
+    <p><b>투표가 마감되었습니다</b></p>
+    <p class="muted">선정 결과는 결과판에서 확인할 수 있습니다.</p>
+    <a class="goBoard" href="board.html">📊 결과 보러 가기</a>
+  </div>
+
+  <div class="bigCard" id="done" hidden>
     <div class="big">🗳️</div>
     <p><b id="doneName"></b>님의 투표가 제출되었습니다!</p>
-    <div class="picks" id="donePicks"></div>
-    <p class="muted">마감 전까지는 수정할 수 있어요.</p>
-    <div class="doneBtns">
-      <a id="goBoard" href="board.html">📊 실시간 결과 보기</a>
-      <button id="edit">선택 수정하기</button>
-    </div>
+    <div class="picksList" id="donePicks"></div>
+    <p class="muted">제출이 확정되어 수정할 수 없습니다.<br>착오가 있으면 관리자에게 문의하세요.</p>
+    <a class="goBoard" href="board.html">📊 실시간 결과 보기</a>
   </div>
 
-  <div id="err" hidden>
+  <div class="bigCard" id="err" hidden>
     <h2>개인 QR로 접속해주세요</h2>
-    <p>이 투표는 나눠드린 개인 QR 코드로만 참여할 수 있습니다.<br>
+    <p>이 페이지는 나눠드린 개인 QR 코드로만 참여할 수 있습니다.<br>
     본인 이름이 적힌 QR을 카메라로 찍어 다시 접속해주세요.</p>
   </div>
 
-  <footer>QR 실시간 투표</footer>
+  <footer>청렴 슬로건 공모 · 실시간 투표</footer>
 
-<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="config.js"></script>
 <script>
   var params = new URLSearchParams(location.search);
   var token = params.get("t") || "";
 
   var teamByKey = {};
-  POLL.teams.forEach(function (t) { teamByKey[t.key] = t; });
+  var teamColor = {};
+  var COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ec4899", "#38bdf8", "#f97316"];
+  POLL.teams.forEach(function (t, i) {
+    teamByKey[t.key] = t;
+    teamColor[t.key] = COLORS[i % COLORS.length];
+  });
 
   document.getElementById("q").textContent = POLL.title;
-  document.getElementById("sub").textContent = POLL.subtitle;
 
   function showErr() {
     document.getElementById("err").hidden = false;
     document.getElementById("status").hidden = true;
+    document.getElementById("sub").textContent = "";
   }
 
   if (!token) {
@@ -138,201 +175,305 @@
       var voter = null;
       POLL.voters.forEach(function (v) { if (v.h === h) voter = v; });
       if (!voter) showErr();
-      else initVote(voter, h);
-    });
+      else init(voter, h);
+    }).catch(function () { showErr(); });
   }
 
-  function initVote(voter, myHash) {
-    var myTopic = POLL.id + "/ballot/" + myHash;
-    var picks = [];            // 선택한 팀 key 목록
-    var submitted = null;      // 마지막으로 제출된 팀 key 목록
-    var interacted = false;    // 사용자가 화면을 만지기 시작했는지
-    var lastTs = 0;            // 지금까지 반영한 메시지 중 가장 최신 시각
-    var links = [];            // 브로커 연결 목록
+  function init(voter, myHash) {
+    firebase.initializeApp(POLL.firebase);
+    var db = firebase.database();
+    var base = "polls/" + POLL.id;
+    var myRef = db.ref(base + "/ballots/" + myHash);
+
+    var phase = null;           // collect | vote | closed
+    var slogans = {};           // sid -> {text, team, ts}
+    var picks = [];             // 선택한 슬로건 id 목록
+    var submitted = null;       // 제출 확정된 슬로건 id 목록
+    var sending = false;
+    var connected = false;
 
     var meEl = document.getElementById("me");
     meEl.hidden = false;
     meEl.textContent = voter.name + " (" + teamByKey[voter.team].name + ")";
 
-    var list = document.getElementById("list");
-    var submitWrap = document.getElementById("submitWrap");
-    var submitBtn = document.getElementById("submit");
-    var pickedEl = document.getElementById("picked");
+    var subEl = document.getElementById("sub");
     var noticeEl = document.getElementById("notice");
-    list.hidden = false;
-    submitWrap.hidden = false;
-
-    var teamBtns = {};
-    POLL.teams.forEach(function (t) {
-      var b = document.createElement("button");
-      b.className = "team";
-      var e = document.createElement("span");
-      e.className = "e";
-      e.textContent = t.emoji;
-      var n = document.createElement("span");
-      n.textContent = t.name;
-      b.appendChild(e);
-      b.appendChild(n);
-      if (t.key === voter.team) {
-        b.classList.add("mine");
-        b.disabled = true;
-        var tag = document.createElement("span");
-        tag.className = "tag";
-        tag.textContent = "우리 팀 · 투표 불가";
-        b.appendChild(tag);
-      } else {
-        var mark = document.createElement("span");
-        mark.className = "mark";
-        b.appendChild(mark);
-        b.addEventListener("click", function () { toggle(t.key); });
-      }
-      list.appendChild(b);
-      teamBtns[t.key] = b;
-    });
-
-    function anyUp() { return links.some(function (x) { return x.up; }); }
-
-    function toggle(key) {
-      interacted = true;
-      var i = picks.indexOf(key);
-      if (i >= 0) picks.splice(i, 1);
-      else if (picks.length < POLL.maxPicks) picks.push(key);
-      refresh();
-    }
-
-    function refresh() {
-      POLL.teams.forEach(function (t) {
-        if (t.key === voter.team) return;
-        var b = teamBtns[t.key];
-        var sel = picks.indexOf(t.key) >= 0;
-        b.classList.toggle("sel", sel);
-        b.querySelector(".mark").textContent = sel ? "✓" : "";
-      });
-      pickedEl.textContent = picks.length + " / " + POLL.maxPicks + "팀 선택됨";
-      submitBtn.disabled = !(anyUp() && picks.length === POLL.maxPicks);
-    }
-    refresh();
+    var input = document.getElementById("sloganInput");
+    input.maxLength = POLL.sloganMax;
+    var charCnt = document.getElementById("charCnt");
+    var sloganSubmit = document.getElementById("sloganSubmit");
+    var voteSubmit = document.getElementById("voteSubmit");
+    var pickedEl = document.getElementById("picked");
 
     function setStatus(text, on) {
       document.getElementById("statusText").textContent = text;
       document.getElementById("dot").className = on ? "dot on" : "dot";
     }
-    function updateStatus() {
-      if (anyUp()) setStatus("실시간 연결됨", true);
-      else setStatus("연결 중…", false);
-      refresh();
+    function setNotice(text) {
+      noticeEl.hidden = !text;
+      noticeEl.textContent = text || "";
     }
 
-    // ----- 연결: 두 브로커 모두에 접속 (표를 양쪽에 저장해 유실 방지) -----
-    POLL.brokers.forEach(function (url) {
-      var entry = { up: false, client: null };
-      links.push(entry);
-      var c = mqtt.connect(url, {
-        clientId: "qv_" + Math.random().toString(16).slice(2, 10),
-        connectTimeout: 8000,
-        reconnectPeriod: 5000,
-        clean: true,
-      });
-      entry.client = c;
-      c.on("connect", function () {
-        entry.up = true;
-        c.subscribe(myTopic, { qos: 1 });   // 내 표(보존 메시지) 복원/초기화 감지용
-        updateStatus();
-      });
-      c.on("close", function () {
-        if (entry.up) { entry.up = false; updateStatus(); }
-      });
-      c.on("error", function () { /* 재연결은 mqtt.js가 알아서 반복 */ });
-      c.on("message", onMsg);
-    });
+    // ----- 슬로건 카드 생성 (제출 목록/투표 공용) -----
+    function sloganCard(sid, s, opts) {
+      var el = document.createElement(opts.button ? "button" : "div");
+      el.className = "scard";
+      var txt = document.createElement("div");
+      txt.className = "txt";
+      txt.textContent = "“" + s.text + "”";
+      var meta = document.createElement("div");
+      meta.className = "metaRow";
+      var chip = document.createElement("span");
+      chip.className = "chip";
+      var team = teamByKey[s.team];
+      chip.textContent = team ? team.emoji + " " + team.name : s.team;
+      chip.style.background = teamColor[s.team] || "#8a90a3";
+      meta.appendChild(chip);
+      if (s.team === voter.team) {
+        var mine = document.createElement("span");
+        mine.className = "mineTag";
+        mine.textContent = opts.button ? "우리 팀 · 투표 불가" : "우리 팀";
+        meta.appendChild(mine);
+      }
+      if (opts.button && s.team !== voter.team) {
+        var mark = document.createElement("span");
+        mark.className = "mark";
+        mark.textContent = picks.indexOf(sid) >= 0 ? "✓" : "";
+        meta.appendChild(mark);
+      }
+      el.appendChild(txt);
+      el.appendChild(meta);
+      if (opts.button) {
+        if (s.team === voter.team) {
+          el.classList.add("mine");
+          el.disabled = true;
+        } else {
+          if (picks.indexOf(sid) >= 0) el.classList.add("sel");
+          el.addEventListener("click", function () { toggle(sid); });
+        }
+      }
+      return el;
+    }
 
-    function onMsg(t, payload) {
-      if (!payload || payload.length === 0) return;   // 빈 메시지는 무시
-      var m;
-      try { m = JSON.parse(payload.toString()); } catch (e) { return; }
-      if (!m || !validTs(m.ts)) return;
+    function sortedSloganIds() {
+      return Object.keys(slogans).sort(function (a, b) {
+        return (slogans[b].ts || 0) - (slogans[a].ts || 0);   // 최신순
+      });
+    }
 
-      if (m.reset === true && typeof m.a === "string") {
-        // 관리자 초기화 묘비 메시지 — 진짜인지 해시로 확인
-        sha16(m.a).then(function (ah) {
-          if (ah !== POLL.adminHash) return;
-          if (m.ts <= lastTs) return;
-          lastTs = m.ts;
-          handleReset();
+    function toggle(sid) {
+      if (submitted || sending) return;
+      var i = picks.indexOf(sid);
+      if (i >= 0) picks.splice(i, 1);
+      else if (picks.length < POLL.maxPicks) picks.push(sid);
+      render();
+    }
+
+    // ----- 화면 라우팅: 단계·제출 여부에 따라 섹션 전환 -----
+    function render() {
+      var collect = document.getElementById("phaseCollect");
+      var vote = document.getElementById("phaseVote");
+      var voteBar = document.getElementById("voteBar");
+      var closed = document.getElementById("phaseClosed");
+      var done = document.getElementById("done");
+      collect.hidden = vote.hidden = voteBar.hidden = closed.hidden = done.hidden = true;
+
+      if (!phase) { subEl.textContent = "불러오는 중…"; return; }
+
+      if (phase === "collect") {
+        subEl.textContent = POLL.subCollect;
+        collect.hidden = false;
+        var gc = document.getElementById("galleryC");
+        gc.innerHTML = "";
+        var ids = sortedSloganIds();
+        document.getElementById("galleryCTitle").textContent =
+          "제출된 슬로건 (" + ids.length + "건)";
+        ids.forEach(function (sid) {
+          gc.appendChild(sloganCard(sid, slogans[sid], { button: false }));
         });
+        refreshSloganForm();
         return;
       }
 
-      // 내 보존 표 — 토큰 증명과 내용 검증 후 복원 (다른 기기에서 투표한 경우 포함)
-      if (m.token !== token) return;
-      if (!validTeams(m.teams, voter.team)) return;
-      if (m.ts <= lastTs) return;
-      lastTs = m.ts;
-      if (!interacted || submitted) {
-        picks = m.teams.slice();
-        showDone(m.teams);
-        refresh();
+      if (phase === "vote") {
+        if (submitted) {
+          subEl.textContent = "";
+          done.hidden = false;
+          renderDone();
+          return;
+        }
+        subEl.textContent = POLL.subVote;
+        vote.hidden = false;
+        voteBar.hidden = false;
+        var gv = document.getElementById("galleryV");
+        gv.innerHTML = "";
+        sortedSloganIds().forEach(function (sid) {
+          gv.appendChild(sloganCard(sid, slogans[sid], { button: true }));
+        });
+        pickedEl.textContent = picks.length + " / " + POLL.maxPicks + "개 선택됨";
+        voteSubmit.disabled = !(connected && !sending && picks.length === POLL.maxPicks);
+        return;
       }
+
+      // closed
+      subEl.textContent = POLL.subClosed;
+      if (submitted) { done.hidden = false; renderDone(); }
+      else closed.hidden = false;
     }
 
-    function handleReset() {
-      submitted = null;
-      picks = [];
-      interacted = false;
-      document.getElementById("done").hidden = true;
-      list.hidden = false;
-      submitWrap.hidden = false;
-      noticeEl.hidden = false;
-      noticeEl.textContent = "투표가 초기화되었습니다 — 다시 선택해주세요";
-      refresh();
+    function renderDone() {
+      document.getElementById("doneName").textContent = voter.name;
+      document.getElementById("donePicks").innerHTML = "";
+      var wrap = document.getElementById("donePicks");
+      (submitted || []).forEach(function (sid) {
+        var line = document.createElement("div");
+        var s = slogans[sid];
+        line.textContent = s ? "“" + s.text + "”" : "(삭제된 문구)";
+        wrap.appendChild(line);
+      });
     }
 
-    submitBtn.addEventListener("click", function () {
-      if (!anyUp() || picks.length !== POLL.maxPicks) return;
-      submitBtn.disabled = true;
-      setStatus("전송 중…", false);
-      var chosen = picks.slice();
-      var ts = Date.now();
-      var payload = JSON.stringify({ token: token, teams: chosen, ts: ts });
+    // ----- 접수 단계: 문구 제출 -----
+    function refreshSloganForm() {
+      var len = input.value.trim().length;
+      charCnt.textContent = input.value.length + " / " + POLL.sloganMax + "자";
+      sloganSubmit.disabled = !(connected && phase === "collect" && len > 0 && len <= POLL.sloganMax && !sending);
+    }
+    input.addEventListener("input", refreshSloganForm);
+
+    sloganSubmit.addEventListener("click", function () {
+      var text = input.value.trim();
+      if (!text || phase !== "collect" || sending) return;
+      sending = true;
+      refreshSloganForm();
+      setStatus("제출 중…", false);
       var settled = false;
       var timer = setTimeout(function () {
         if (settled) return;
         settled = true;
-        setStatus("전송 실패 — 다시 눌러주세요", false);
-        refresh();
-      }, 6000);
-      // retain: 브로커가 사람별 마지막 표를 저장 → 결과판을 언제 열어도 복원됨
-      links.forEach(function (entry) {
-        entry.client.publish(myTopic, payload, { qos: 1, retain: true }, function (err) {
-          if (settled || err) return;
-          settled = true;                    // 한 브로커라도 저장되면 성공
-          clearTimeout(timer);
-          if (ts > lastTs) lastTs = ts;
-          noticeEl.hidden = true;
-          updateStatus();
-          showDone(chosen);
+        sending = false;
+        setStatus("전송이 지연되고 있습니다 — 다시 시도해주세요", false);
+        refreshSloganForm();
+      }, 8000);
+      var sid = db.ref(base + "/slogans").push().key;
+      // 1) 비공개 원본(제출자 증명 포함) → 2) 공개 사본(갤러리·투표용) 순서로 저장
+      db.ref(base + "/slogans/" + sid).set({
+        proof: token,
+        h: myHash,
+        text: text,
+        team: voter.team,
+        ts: firebase.database.ServerValue.TIMESTAMP,
+      }).then(function () {
+        return db.ref(base + "/sloganList/" + sid).set({
+          text: text,
+          team: voter.team,
+          ts: firebase.database.ServerValue.TIMESTAMP,
         });
+      }).then(function () {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        sending = false;
+        input.value = "";
+        setStatus("실시간 연결됨", true);
+        setNotice("문구가 제출되었습니다! 여러 개 제출해도 됩니다.");
+        render();
+      }).catch(function (err) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        sending = false;
+        if (String(err).indexOf("PERMISSION_DENIED") >= 0) {
+          setStatus("제출이 거부되었습니다 — 접수 기간이 아니거나 형식 오류", false);
+        } else {
+          setStatus("제출 실패 — 다시 시도해주세요", false);
+        }
+        render();
       });
     });
 
-    function showDone(teams) {
-      submitted = teams.slice();
-      list.hidden = true;
-      submitWrap.hidden = true;
-      var done = document.getElementById("done");
-      done.hidden = false;
-      document.getElementById("doneName").textContent = voter.name;
-      document.getElementById("donePicks").textContent = teams.map(function (k) {
-        return teamByKey[k].emoji + " " + teamByKey[k].name;
-      }).join(" · ");
-    }
+    // ----- 투표 단계: 2개 골라 제출 (1회 확정) -----
+    voteSubmit.addEventListener("click", function () {
+      if (!connected || sending || submitted || picks.length !== POLL.maxPicks || phase !== "vote") return;
+      var names = picks.map(function (sid) {
+        return slogans[sid] ? "“" + slogans[sid].text + "”" : sid;
+      }).join("\n");
+      if (!confirm("제출하면 수정할 수 없습니다.\n\n" + names + "\n\n이대로 제출할까요?")) return;
+      sending = true;
+      render();
+      setStatus("전송 중…", false);
+      var chosen = picks.slice();
+      var timer = setTimeout(function () {
+        if (!sending) return;
+        sending = false;
+        setStatus("전송이 지연되고 있습니다 — 다시 시도해주세요", false);
+        render();
+      }, 8000);
+      myRef.set({
+        proof: token,
+        vote: {
+          picks: { a: chosen[0], b: chosen[1] },
+          ts: firebase.database.ServerValue.TIMESTAMP,
+        },
+      }).then(function () {
+        clearTimeout(timer);
+        sending = false;
+        submitted = chosen.slice();
+        setStatus("실시간 연결됨", true);
+        setNotice("");
+        render();
+      }).catch(function (err) {
+        clearTimeout(timer);
+        sending = false;
+        if (String(err).indexOf("PERMISSION_DENIED") >= 0) {
+          setStatus("거부되었습니다 — 이미 제출했거나 투표 기간이 아닙니다", false);
+        } else {
+          setStatus("전송 실패 — 다시 시도해주세요", false);
+        }
+        render();
+      });
+    });
 
-    document.getElementById("edit").addEventListener("click", function () {
-      interacted = true;
-      document.getElementById("done").hidden = true;
-      list.hidden = false;
-      submitWrap.hidden = false;
-      refresh();
+    // ----- 실시간 구독 -----
+    db.ref(".info/connected").on("value", function (snap) {
+      connected = snap.val() === true;
+      if (!sending) setStatus(connected ? "실시간 연결됨" : "연결 중…", connected);
+      render();
+    });
+
+    db.ref(base + "/state/phase").on("value", function (snap) {
+      var next = snap.val();
+      if (phase === "collect" && next === "vote") setNotice("투표가 시작되었습니다!");
+      if (next === "collect" && phase === "vote") setNotice("");
+      phase = next;
+      render();
+    }, function () {
+      setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false);
+    });
+
+    db.ref(base + "/sloganList").on("value", function (snap) {
+      slogans = snap.val() || {};
+      // 삭제된 문구가 선택에 남아있으면 정리
+      picks = picks.filter(function (sid) { return slogans[sid]; });
+      render();
+    }, function () {
+      setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false);
+    });
+
+    myRef.child("vote").on("value", function (snap) {
+      if (sending) return;   // 전송 중의 낙관적 반영/롤백은 무시 — 확정은 set().then()에서만
+      var v = snap.val();
+      if (v && v.picks && typeof v.picks.a === "string") {
+        submitted = [v.picks.a, v.picks.b];
+        render();
+      } else if (submitted) {
+        submitted = null;
+        picks = [];
+        setNotice("관리자가 재투표를 열어줬습니다 — 다시 선택해주세요");
+        render();
+      }
+    }, function () {
+      setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false);
     });
   }
 </script>

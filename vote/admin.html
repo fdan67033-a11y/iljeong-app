@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>공모 관리 대시보드</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    background: #f4f5fa; color: #1f2330;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 32px 16px;
+  }
+  .badge {
+    font-size: 13px; font-weight: 600; color: #b3401f; background: #fbe9e2;
+    border-radius: 999px; padding: 5px 14px;
+  }
+  h1 { font-size: 22px; margin: 14px 0 6px; }
+  #status { font-size: 13px; color: #8a90a3; margin-bottom: 20px; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #f0b429; flex-shrink: 0; }
+  .dot.on { background: #22c55e; }
+  .card {
+    background: #fff; border: 2px solid #e4e6ef; border-radius: 18px;
+    padding: 24px; width: 100%; max-width: 480px; margin-bottom: 16px;
+  }
+  .phaseNow { font-size: 15px; margin-bottom: 4px; color: #8a90a3; }
+  .phaseNow b { font-size: 22px; color: #1f2330; display: block; margin-top: 4px; }
+  .stats { font-size: 15px; color: #1f2330; line-height: 2; }
+  .stats .num { font-weight: 700; color: #4f46e5; }
+  .miss { font-size: 13px; color: #8a90a3; margin-top: 8px; line-height: 1.7; }
+  h2 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .steps { font-size: 13px; color: #6b7080; line-height: 1.7; margin: 8px 0 14px; }
+  .phaseLinks { display: flex; flex-direction: column; gap: 10px; }
+  .phaseLinks a {
+    border: 2px solid #e4e6ef; border-radius: 14px; padding: 14px 16px;
+    font-size: 15px; font-weight: 700; text-decoration: none; color: #1f2330;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .phaseLinks a:hover { border-color: #4f46e5; background: #f4f3ff; }
+  .phaseLinks a.now { border-color: #22c55e; background: #ecfdf3; cursor: default; }
+  .phaseLinks a .desc { font-size: 12px; color: #8a90a3; font-weight: 400; display: block; margin-top: 3px; }
+  .phaseLinks a .badge2 { margin-left: auto; font-size: 11px; color: #16a34a; font-weight: 700; }
+  .note { font-size: 12px; color: #8a90a3; line-height: 1.7; }
+  .note code { font-family: Consolas, monospace; background: #f4f5fa; padding: 1px 5px; border-radius: 5px; }
+  .boardLink {
+    display: inline-block; margin-top: 4px; border-radius: 10px; padding: 10px 16px;
+    font-size: 14px; text-decoration: none; background: #4f46e5; color: #fff; font-weight: 600;
+  }
+  [hidden] { display: none; }
+</style>
+</head>
+<body>
+  <div class="badge">🔧 관리 대시보드</div>
+  <h1 id="q"></h1>
+  <div id="status"><span class="dot" id="dot"></span><span id="statusText">연결 중…</span></div>
+
+  <div class="card">
+    <div class="phaseNow">현재 단계 <b id="phaseNow">불러오는 중…</b></div>
+  </div>
+
+  <div class="card">
+    <div class="stats" id="stats">현황 불러오는 중…</div>
+    <div class="miss" id="miss"></div>
+  </div>
+
+  <div class="card">
+    <h2>단계 전환 (관리자 = 구글 콘솔)</h2>
+    <div class="steps">
+      아래 버튼을 누르면 Firebase 콘솔의 해당 위치가 열립니다.
+      <code>phase</code> 값을 직접 <b>collect → vote → closed</b> 로 바꾸고 저장하세요.
+      콘솔은 관리자 구글 계정 로그인이 필요하므로, 이 페이지 주소를 남이 알아도 단계를 바꿀 수 없습니다.
+    </div>
+    <div class="phaseLinks" id="phaseLinks">
+      <a id="linkPhase" target="_blank" rel="noopener">🎛️ 콘솔에서 단계 변경<span class="desc">phase 값을 collect / vote / closed 로 편집</span></a>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="note">
+      · 부적절한 문구 삭제: 콘솔에서 <code>polls/slogan-2026/sloganList/해당항목</code> 삭제<br>
+      · 특정인 재투표 허용: 콘솔에서 <code>polls/slogan-2026/ballots/그사람해시</code> 삭제<br>
+      · 전체 표 초기화: 콘솔에서 <code>polls/slogan-2026/ballots</code> 삭제<br>
+      · 이 대시보드는 열람 전용이라 안전합니다 (여기서는 아무것도 바꾸지 않음)
+    </div>
+    <div style="margin-top:14px"><a class="boardLink" href="board.html" target="_blank">📊 결과 현황판 열기</a></div>
+  </div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="config.js"></script>
+<script>
+  document.getElementById("q").textContent = POLL.title + " 관리";
+
+  // ----- 콘솔 딥링크 (state/phase 노드로 바로 이동) -----
+  var proj = POLL.firebase.projectId;
+  var inst = POLL.firebase.databaseURL.replace("https://", "").split(".")[0];
+  function consoleLink(path) {
+    var enc = path.split("/").map(function (s) { return s ? "~2F" + s : ""; }).join("");
+    return "https://console.firebase.google.com/project/" + proj + "/database/" + inst + "/data/" + enc;
+  }
+  document.getElementById("linkPhase").href = consoleLink("/polls/" + POLL.id + "/state");
+
+  firebase.initializeApp(POLL.firebase);
+  var db = firebase.database();
+  var base = "polls/" + POLL.id;
+
+  var LABEL = { collect: "📝 슬로건 접수 중", vote: "🗳️ 투표 진행 중", closed: "🏁 투표 마감" };
+
+  function setStatus(text, on) {
+    document.getElementById("statusText").textContent = text;
+    document.getElementById("dot").className = on ? "dot on" : "dot";
+  }
+
+  db.ref(".info/connected").on("value", function (snap) {
+    setStatus(snap.val() === true ? "실시간 연결됨" : "연결 중…", snap.val() === true);
+  });
+
+  db.ref(base + "/state/phase").on("value", function (snap) {
+    var phase = snap.val();
+    document.getElementById("phaseNow").textContent =
+      phase ? (LABEL[phase] || String(phase)) : "미설정 — 콘솔에서 phase를 collect로 설정하세요";
+    var link = document.getElementById("linkPhase");
+    link.querySelector(".desc").textContent =
+      "현재: " + (phase || "미설정") + " · phase 값을 collect / vote / closed 로 편집";
+  }, function () {
+    setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false);
+  });
+
+  var sloganCnt = 0, ballotCnt = 0, missing = [];
+  function renderStats() {
+    document.getElementById("stats").innerHTML =
+      "접수된 문구 <span class='num'>" + sloganCnt + "</span>건<br>" +
+      "투표 제출 <span class='num'>" + ballotCnt + "</span> / " + POLL.voters.length + "명";
+    document.getElementById("miss").textContent =
+      missing.length && missing.length < POLL.voters.length
+        ? "미제출: " + missing.map(function (v) { return v.name; }).join(", ")
+        : (missing.length === 0 ? "🎉 전원 제출 완료" : "");
+  }
+  db.ref(base + "/sloganList").on("value", function (snap) {
+    sloganCnt = snap.numChildren();
+    renderStats();
+  }, function () {
+    setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false);
+  });
+  var ballotSet = {};
+  POLL.voters.forEach(function (v) {
+    db.ref(base + "/ballots/" + v.h + "/vote").on("value", function (snap) {
+      ballotSet[v.h] = snap.val() ? true : false;
+      ballotCnt = POLL.voters.filter(function (x) { return ballotSet[x.h]; }).length;
+      missing = POLL.voters.filter(function (x) { return !ballotSet[x.h]; });
+      renderStats();
+    }, function () {
+      setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false);
+    });
+  });
+</script>
+</body>
+</html>
