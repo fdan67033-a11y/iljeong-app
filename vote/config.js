@@ -19,6 +19,10 @@ const POLL = {
   // 슬로건 최대 글자 수 (서버 규칙과 동일하게 유지)
   sloganMax: 60,
 
+  // 관리자 로그인 이메일 — Firebase Authentication(이메일/비밀번호)에 이 계정을 만들어 두세요.
+  // 시드의 admin/email과 반드시 동일해야 합니다. (비밀번호는 콘솔에서 정하며 여기 넣지 않음)
+  adminEmail: "admin@example.com",
+
   teams: [
     { key: "t1", name: "세입운영팀", emoji: "🦁" },
     { key: "t2", name: "재산세팀", emoji: "🐯" },

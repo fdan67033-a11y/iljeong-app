@@ -38,10 +38,10 @@ polls/
    서버 규칙이 `voters/<해시>/secret`과 대조해 일치할 때만 저장합니다.
    secret과 proof는 읽기 권한이 없어 외부로 새지 않습니다.
 2. **단계(phase) 강제**: 문구 제출은 collect 단계에만, 투표는 vote 단계에만
-   서버가 허용합니다. `state/phase`는 클라이언트가 쓸 수 없고(규칙상 쓰기 없음),
-   오직 Firebase 콘솔(관리자 구글 로그인 = 규칙 우회)에서만 변경됩니다. 데이터에 저장한
-   비밀키로 클라이언트 쓰기를 막는 방식은 부분 쓰기가 기존 값을 물려받아 뚫리므로 채택하지
-   않았습니다. admin.html은 열람 전용 대시보드이며, 콘솔의 phase 노드로 가는 바로가기를 제공합니다.
+   서버가 허용합니다. `state/phase` 변경은 Firebase Authentication으로 로그인한
+   관리자 계정(auth.uid가 `admin/uid`와 일치)만 가능합니다. admin.html에서 관리자가
+   이메일/비밀번호로 로그인하면 단계 전환 버튼이 활성화됩니다. (데이터에 저장한 비밀키로
+   막는 방식은 부분 쓰기가 기존 값을 물려받아 뚫리므로 폐기하고 auth 기반으로 전환)
 3. **1회 제출 확정(불변)**: 이미 표가 있으면(`data.exists()`) 어떤 쓰기도 거부합니다.
    "수정 허용" 규칙은 부분 업데이트로 기존 proof를 상속받아 남의 picks만 바꿔치기하는
    공격이 가능해서 의도적으로 막았습니다. 재투표는 관리자가 콘솔에서 표 삭제로 허용.
@@ -54,7 +54,7 @@ polls/
 원본 파일: 관리자 PC의 `C:\todo_manual_dashboard\firebase-rules.json`
 
 규칙이 강제하는 것:
-- 단계(state/phase)는 클라이언트 쓰기 불가 — 콘솔에서만 변경(구글 로그인)
+- 단계(state/phase)는 관리자 계정(auth.uid === admin/uid)만 변경 가능
 - 문구는 collect 단계에만, 1~60자, 제출자 소속 팀으로만 등록 가능
 - 표 생성은 vote 단계에만, proof 일치 시 **최초 1회만**
 - picks는 a·b 두 슬롯, 서로 다른 문구, 실존하는 문구, **본인 팀 문구 제외**
@@ -66,14 +66,28 @@ polls/
 원본 파일: 관리자 PC의 `C:\todo_manual_dashboard\firebase-seed.json`
 
 콘솔 → Realtime Database → 데이터 탭 → 루트(DB 주소 줄) 오른쪽 ⋮ → **JSON 가져오기**
-→ 파일 선택. `polls/slogan-2026` 아래에 state/teams/voters가 들어가면 성공.
+→ 파일 선택. `polls/slogan-2026` 아래에 state/admin/teams/voters가 들어가면 성공.
 ※ 가져오기는 해당 위치를 통째로 교체하므로, 진행 중(문구·표 존재)에는 하지 말 것.
+
+## 관리자 계정 설정 (한 번만)
+
+단계 전환 버튼(admin.html)을 쓰려면 관리자 로그인 계정이 필요합니다.
+
+1. 콘솔 → **Authentication** → 시작하기 → **Sign-in method** → **이메일/비밀번호** 사용 설정
+2. **Users** 탭 → 사용자 추가 → 이메일 `admin@example.com`(= config.js의 adminEmail,
+   시드의 admin/email과 동일해야 함) + 원하는 비밀번호 → 추가
+   (이메일은 실제 수신용이 아니라 로그인 ID일 뿐. 바꾸려면 세 곳을 함께 수정)
+3. admin.html 접속 → 그 비밀번호로 로그인. 최초 로그인 시 이 계정의 uid가
+   `admin/uid`에 자동 등록되고(규칙상 지정 이메일 1회만), 이후 그 계정만 단계를 바꿀 수 있음.
+
+이메일은 공개돼도 되고(로그인 ID), 실제 보안은 비밀번호(Firebase가 해시 보관)와
+uid 검증이 담당합니다. 비밀번호는 코드 어디에도 저장되지 않습니다.
 
 ## 운영
 
 | 작업 | 방법 |
 |---|---|
-| 단계 전환 (접수→투표→마감) | 콘솔 데이터탭에서 `polls/slogan-2026/state/phase` 값을 collect→vote→closed로 편집 (admin.html에 바로가기 버튼) |
+| 단계 전환 (접수→투표→마감) | admin.html 로그인 후 단계 버튼 클릭 (또는 콘솔에서 state/phase 직접 편집) |
 | 부적절한 문구 삭제 | 콘솔에서 `polls/slogan-2026/sloganList/<항목>` 삭제 |
 | 한 사람 재투표 허용 | 콘솔에서 `polls/slogan-2026/ballots/<해시>` 삭제 (해시는 config.js에서 이름으로 검색) |
 | 전체 표 초기화 | 콘솔에서 `polls/slogan-2026/ballots` 노드 삭제 |

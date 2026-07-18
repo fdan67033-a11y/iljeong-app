@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>공모 관리 대시보드</title>
+<title>공모 관리</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -29,29 +29,41 @@
   .stats { font-size: 15px; color: #1f2330; line-height: 2; }
   .stats .num { font-weight: 700; color: #4f46e5; }
   .miss { font-size: 13px; color: #8a90a3; margin-top: 8px; line-height: 1.7; }
-  h2 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-  .steps { font-size: 13px; color: #6b7080; line-height: 1.7; margin: 8px 0 14px; }
-  .phaseLinks { display: flex; flex-direction: column; gap: 10px; }
-  .phaseLinks a {
-    border: 2px solid #e4e6ef; border-radius: 14px; padding: 14px 16px;
-    font-size: 15px; font-weight: 700; text-decoration: none; color: #1f2330;
+  h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+  label { font-size: 13px; color: #6b7080; display: block; margin-bottom: 4px; }
+  input {
+    width: 100%; border: 1px solid #d4d7e3; border-radius: 10px; padding: 12px;
+    font-family: inherit; font-size: 15px; margin-bottom: 12px; outline-color: #4f46e5;
+  }
+  input[readonly] { background: #f4f5fa; color: #8a90a3; }
+  button.primary {
+    width: 100%; background: #4f46e5; color: #fff; border: none; border-radius: 12px;
+    padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+  button.primary:disabled { background: #c7c5f4; cursor: default; }
+  .msg { font-size: 13px; margin-top: 10px; line-height: 1.6; }
+  .msg.err { color: #b3401f; }
+  .msg.ok { color: #16a34a; }
+  .who { font-size: 13px; color: #16a34a; margin-bottom: 14px; }
+  .phaseBtns { display: flex; flex-direction: column; gap: 10px; }
+  .phaseBtns button {
+    border: 2px solid #e4e6ef; background: #fff; border-radius: 14px; padding: 15px 16px;
+    font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; text-align: left;
     display: flex; align-items: center; gap: 10px;
   }
-  .phaseLinks a:hover { border-color: #4f46e5; background: #f4f3ff; }
-  .phaseLinks a.now { border-color: #22c55e; background: #ecfdf3; cursor: default; }
-  .phaseLinks a .desc { font-size: 12px; color: #8a90a3; font-weight: 400; display: block; margin-top: 3px; }
-  .phaseLinks a .badge2 { margin-left: auto; font-size: 11px; color: #16a34a; font-weight: 700; }
+  .phaseBtns button:hover:not(:disabled) { border-color: #4f46e5; }
+  .phaseBtns button.now { border-color: #22c55e; background: #ecfdf3; }
+  .phaseBtns button .desc { font-size: 12px; color: #8a90a3; font-weight: 400; display: block; margin-top: 3px; }
+  .phaseBtns button .cur { margin-left: auto; font-size: 11px; color: #16a34a; font-weight: 700; }
+  .logout { margin-top: 14px; background: none; border: 1px solid #d4d7e3; color: #8a90a3; border-radius: 10px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: inherit; }
   .note { font-size: 12px; color: #8a90a3; line-height: 1.7; }
   .note code { font-family: Consolas, monospace; background: #f4f5fa; padding: 1px 5px; border-radius: 5px; }
-  .boardLink {
-    display: inline-block; margin-top: 4px; border-radius: 10px; padding: 10px 16px;
-    font-size: 14px; text-decoration: none; background: #4f46e5; color: #fff; font-weight: 600;
-  }
+  .boardLink { display: inline-block; margin-top: 4px; border-radius: 10px; padding: 10px 16px; font-size: 14px; text-decoration: none; background: #4f46e5; color: #fff; font-weight: 600; }
   [hidden] { display: none; }
 </style>
 </head>
 <body>
-  <div class="badge">🔧 관리 대시보드</div>
+  <div class="badge">🔧 관리자</div>
   <h1 id="q"></h1>
   <div id="status"><span class="dot" id="dot"></span><span id="statusText">연결 중…</span></div>
 
@@ -65,14 +77,26 @@
   </div>
 
   <div class="card">
-    <h2>단계 전환 (관리자 = 구글 콘솔)</h2>
-    <div class="steps">
-      아래 버튼을 누르면 Firebase 콘솔의 해당 위치가 열립니다.
-      <code>phase</code> 값을 직접 <b>collect → vote → closed</b> 로 바꾸고 저장하세요.
-      콘솔은 관리자 구글 계정 로그인이 필요하므로, 이 페이지 주소를 남이 알아도 단계를 바꿀 수 없습니다.
+    <h2>단계 전환</h2>
+
+    <div id="loginBox">
+      <label>관리자 이메일</label>
+      <input id="email" type="email" readonly>
+      <label>비밀번호</label>
+      <input id="pw" type="password" placeholder="관리자 비밀번호" autocomplete="current-password">
+      <button class="primary" id="loginBtn">로그인</button>
+      <div class="msg" id="loginMsg"></div>
     </div>
-    <div class="phaseLinks" id="phaseLinks">
-      <a id="linkPhase" target="_blank" rel="noopener">🎛️ 콘솔에서 단계 변경<span class="desc">phase 값을 collect / vote / closed 로 편집</span></a>
+
+    <div id="controlBox" hidden>
+      <div class="who" id="who"></div>
+      <div class="phaseBtns">
+        <button data-phase="collect">📝 슬로건 접수<span class="desc">문구 제출·갤러리 열람</span><span class="cur" hidden>현재</span></button>
+        <button data-phase="vote">🗳️ 투표 개시<span class="desc">자기 팀 제외 1인 2표</span><span class="cur" hidden>현재</span></button>
+        <button data-phase="closed">🏁 투표 마감<span class="desc">최다득표 문구 확정</span><span class="cur" hidden>현재</span></button>
+      </div>
+      <div class="msg" id="ctrlMsg"></div>
+      <button class="logout" id="logoutBtn">로그아웃</button>
     </div>
   </div>
 
@@ -80,32 +104,26 @@
     <div class="note">
       · 부적절한 문구 삭제: 콘솔에서 <code>polls/slogan-2026/sloganList/해당항목</code> 삭제<br>
       · 특정인 재투표 허용: 콘솔에서 <code>polls/slogan-2026/ballots/그사람해시</code> 삭제<br>
-      · 전체 표 초기화: 콘솔에서 <code>polls/slogan-2026/ballots</code> 삭제<br>
-      · 이 대시보드는 열람 전용이라 안전합니다 (여기서는 아무것도 바꾸지 않음)
+      · 전체 표 초기화: 콘솔에서 <code>polls/slogan-2026/ballots</code> 삭제
     </div>
     <div style="margin-top:14px"><a class="boardLink" href="board.html" target="_blank">📊 결과 현황판 열기</a></div>
   </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="config.js"></script>
 <script>
   document.getElementById("q").textContent = POLL.title + " 관리";
-
-  // ----- 콘솔 딥링크 (state/phase 노드로 바로 이동) -----
-  var proj = POLL.firebase.projectId;
-  var inst = POLL.firebase.databaseURL.replace("https://", "").split(".")[0];
-  function consoleLink(path) {
-    var enc = path.split("/").map(function (s) { return s ? "~2F" + s : ""; }).join("");
-    return "https://console.firebase.google.com/project/" + proj + "/database/" + inst + "/data/" + enc;
-  }
-  document.getElementById("linkPhase").href = consoleLink("/polls/" + POLL.id + "/state");
+  document.getElementById("email").value = POLL.adminEmail;
 
   firebase.initializeApp(POLL.firebase);
   var db = firebase.database();
+  var auth = firebase.auth();
   var base = "polls/" + POLL.id;
 
   var LABEL = { collect: "📝 슬로건 접수 중", vote: "🗳️ 투표 진행 중", closed: "🏁 투표 마감" };
+  var curPhase = null;
 
   function setStatus(text, on) {
     document.getElementById("statusText").textContent = text;
@@ -116,13 +134,12 @@
     setStatus(snap.val() === true ? "실시간 연결됨" : "연결 중…", snap.val() === true);
   });
 
+  // ----- 현황판과 동일한 공개 데이터 (로그인 불필요) -----
   db.ref(base + "/state/phase").on("value", function (snap) {
-    var phase = snap.val();
+    curPhase = snap.val();
     document.getElementById("phaseNow").textContent =
-      phase ? (LABEL[phase] || String(phase)) : "미설정 — 콘솔에서 phase를 collect로 설정하세요";
-    var link = document.getElementById("linkPhase");
-    link.querySelector(".desc").textContent =
-      "현재: " + (phase || "미설정") + " · phase 값을 collect / vote / closed 로 편집";
+      curPhase ? (LABEL[curPhase] || String(curPhase)) : "미설정";
+    highlightPhase();
   }, function () {
     setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false);
   });
@@ -133,16 +150,13 @@
       "접수된 문구 <span class='num'>" + sloganCnt + "</span>건<br>" +
       "투표 제출 <span class='num'>" + ballotCnt + "</span> / " + POLL.voters.length + "명";
     document.getElementById("miss").textContent =
-      missing.length && missing.length < POLL.voters.length
+      (missing.length && missing.length < POLL.voters.length)
         ? "미제출: " + missing.map(function (v) { return v.name; }).join(", ")
         : (missing.length === 0 ? "🎉 전원 제출 완료" : "");
   }
   db.ref(base + "/sloganList").on("value", function (snap) {
-    sloganCnt = snap.numChildren();
-    renderStats();
-  }, function () {
-    setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false);
-  });
+    sloganCnt = snap.numChildren(); renderStats();
+  }, function () { setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false); });
   var ballotSet = {};
   POLL.voters.forEach(function (v) {
     db.ref(base + "/ballots/" + v.h + "/vote").on("value", function (snap) {
@@ -150,8 +164,89 @@
       ballotCnt = POLL.voters.filter(function (x) { return ballotSet[x.h]; }).length;
       missing = POLL.voters.filter(function (x) { return !ballotSet[x.h]; });
       renderStats();
-    }, function () {
-      setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false);
+    }, function () {});
+  });
+
+  // ----- 로그인 -----
+  var loginMsg = document.getElementById("loginMsg");
+  document.getElementById("loginBtn").addEventListener("click", function () {
+    var pw = document.getElementById("pw").value;
+    if (!pw) { loginMsg.className = "msg err"; loginMsg.textContent = "비밀번호를 입력하세요."; return; }
+    loginMsg.className = "msg"; loginMsg.textContent = "로그인 중…";
+    auth.signInWithEmailAndPassword(POLL.adminEmail, pw).catch(function (err) {
+      loginMsg.className = "msg err";
+      var c = err && err.code;
+      if (c === "auth/operation-not-allowed") loginMsg.textContent = "콘솔에서 '이메일/비밀번호' 로그인을 먼저 켜주세요.";
+      else if (c === "auth/user-not-found") loginMsg.textContent = "관리자 계정(" + POLL.adminEmail + ")을 콘솔에서 먼저 만들어주세요.";
+      else if (c === "auth/wrong-password" || c === "auth/invalid-credential") loginMsg.textContent = "비밀번호가 올바르지 않습니다.";
+      else loginMsg.textContent = "로그인 실패: " + (c || err);
+    });
+  });
+  document.getElementById("pw").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") document.getElementById("loginBtn").click();
+  });
+  document.getElementById("logoutBtn").addEventListener("click", function () { auth.signOut(); });
+
+  // ----- 로그인 상태에 따른 화면 -----
+  var ctrlMsg = document.getElementById("ctrlMsg");
+  auth.onAuthStateChanged(function (user) {
+    if (!user) {
+      document.getElementById("loginBox").hidden = false;
+      document.getElementById("controlBox").hidden = true;
+      return;
+    }
+    // 관리자 등록(uid) 확인 — 없으면 최초 1회 등록(내 uid)
+    db.ref(base + "/admin/uid").once("value").then(function (snap) {
+      var uid = snap.val();
+      if (!uid) {
+        return db.ref(base + "/admin/uid").set(user.uid).then(function () { return user.uid; });
+      }
+      return uid;
+    }).then(function (adminUid) {
+      if (adminUid === user.uid) {
+        document.getElementById("loginBox").hidden = true;
+        document.getElementById("controlBox").hidden = false;
+        document.getElementById("who").textContent = "✓ 관리자로 로그인됨 (" + user.email + ")";
+        ctrlMsg.textContent = "";
+        highlightPhase();
+      } else {
+        ctrlMsg.className = "msg err";
+        ctrlMsg.textContent = "다른 계정이 이미 관리자로 등록되어 있습니다.";
+        document.getElementById("loginBox").hidden = true;
+        document.getElementById("controlBox").hidden = false;
+        Array.prototype.forEach.call(document.querySelectorAll(".phaseBtns button"), function (b) { b.disabled = true; });
+      }
+    }).catch(function (err) {
+      ctrlMsg.className = "msg err";
+      ctrlMsg.textContent = "관리자 등록 확인 실패: " + (err && err.code || err);
+    });
+  });
+
+  function highlightPhase() {
+    Array.prototype.forEach.call(document.querySelectorAll(".phaseBtns button"), function (b) {
+      var isNow = b.getAttribute("data-phase") === curPhase;
+      b.classList.toggle("now", isNow);
+      b.querySelector(".cur").hidden = !isNow;
+    });
+  }
+
+  // ----- 단계 전환 버튼 -----
+  Array.prototype.forEach.call(document.querySelectorAll(".phaseBtns button"), function (btn) {
+    btn.addEventListener("click", function () {
+      var next = btn.getAttribute("data-phase");
+      if (next === curPhase) { ctrlMsg.className = "msg"; ctrlMsg.textContent = "이미 이 단계입니다."; return; }
+      var label = { collect: "슬로건 접수", vote: "투표 개시", closed: "투표 마감" }[next];
+      if (!confirm("단계를 '" + label + "'(으)로 변경할까요?\n모든 참가자·현황판에 즉시 반영됩니다.")) return;
+      ctrlMsg.className = "msg"; ctrlMsg.textContent = "변경 중…";
+      db.ref(base + "/state/phase").set(next).then(function () {
+        ctrlMsg.className = "msg ok"; ctrlMsg.textContent = "✓ '" + label + "'으로 변경되었습니다.";
+      }).catch(function (err) {
+        ctrlMsg.className = "msg err";
+        var c = err && err.code;
+        if (String(err).indexOf("PERMISSION_DENIED") >= 0 || c === "PERMISSION_DENIED")
+          ctrlMsg.textContent = "권한 거부 — 관리자 등록/규칙을 확인하세요.";
+        else ctrlMsg.textContent = "변경 실패: " + (c || err);
+      });
     });
   });
 </script>
