@@ -21,7 +21,7 @@ const POLL = {
 
   // 관리자 = 이 구글 계정. Firebase 콘솔을 만든 구글 계정 이메일을 넣으세요.
   // 시드의 admin/email과 동일해야 하며, 이 계정으로 admin.html에서 'Google로 로그인'합니다.
-  adminEmail: "fdan67033@gmail.com",
+  adminEmail: "semugijang11@gmail.com",
 
   teams: [
     { key: "t1", name: "세입운영팀", emoji: "🦁" },

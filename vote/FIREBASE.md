@@ -78,7 +78,7 @@ polls/
 2. 콘솔 → Authentication → **설정** → **승인된 도메인** → 배포 도메인 추가
    (`fdan67033-a11y.github.io`) — 구글 팝업 로그인에 필요
 3. 관리자 구글 계정 이메일을 config.js의 `adminEmail`과 시드의 `admin/email`에 지정
-   (기본값 fdan67033@gmail.com). 콘솔 로그인 계정이 다르면 admin/email을 그 주소로 수정.
+   (현재값 semugijang11@gmail.com). 콘솔 로그인 계정이 다르면 admin/email을 그 주소로 수정.
 4. admin.html → 'Google로 로그인' → 그 계정 선택. 최초 로그인 시 uid가 `admin/uid`에
    1회 자동 등록되고(규칙상 지정 이메일만), 이후 그 계정만 단계를 바꿀 수 있음.
 
