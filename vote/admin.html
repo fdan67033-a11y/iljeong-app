@@ -176,9 +176,12 @@
     auth.signInWithEmailAndPassword(POLL.adminEmail, pw).catch(function (err) {
       loginMsg.className = "msg err";
       var c = err && err.code;
-      if (c === "auth/operation-not-allowed") loginMsg.textContent = "콘솔에서 '이메일/비밀번호' 로그인을 먼저 켜주세요.";
-      else if (c === "auth/user-not-found") loginMsg.textContent = "관리자 계정(" + POLL.adminEmail + ")을 콘솔에서 먼저 만들어주세요.";
-      else if (c === "auth/wrong-password" || c === "auth/invalid-credential") loginMsg.textContent = "비밀번호가 올바르지 않습니다.";
+      if (c === "auth/configuration-not-found" || c === "auth/operation-not-allowed")
+        loginMsg.textContent = "콘솔 → Authentication에서 '이메일/비밀번호' 로그인을 먼저 켜주세요.";
+      else if (c === "auth/user-not-found")
+        loginMsg.textContent = "관리자 계정(" + POLL.adminEmail + ")을 콘솔에서 먼저 만들어주세요.";
+      else if (c === "auth/wrong-password" || c === "auth/invalid-credential" || c === "auth/invalid-login-credentials")
+        loginMsg.textContent = "비밀번호가 올바르지 않거나 계정이 없습니다.";
       else loginMsg.textContent = "로그인 실패: " + (c || err);
     });
   });
