@@ -30,12 +30,6 @@
   .stats .num { font-weight: 700; color: #4f46e5; }
   .miss { font-size: 13px; color: #8a90a3; margin-top: 8px; line-height: 1.7; }
   h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
-  label { font-size: 13px; color: #6b7080; display: block; margin-bottom: 4px; }
-  input {
-    width: 100%; border: 1px solid #d4d7e3; border-radius: 10px; padding: 12px;
-    font-family: inherit; font-size: 15px; margin-bottom: 12px; outline-color: #4f46e5;
-  }
-  input[readonly] { background: #f4f5fa; color: #8a90a3; }
   button.primary {
     width: 100%; background: #4f46e5; color: #fff; border: none; border-radius: 12px;
     padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit;
@@ -53,6 +47,7 @@
   }
   .phaseBtns button:hover:not(:disabled) { border-color: #4f46e5; }
   .phaseBtns button.now { border-color: #22c55e; background: #ecfdf3; }
+  .phaseBtns button:disabled { opacity: .5; cursor: default; }
   .phaseBtns button .desc { font-size: 12px; color: #8a90a3; font-weight: 400; display: block; margin-top: 3px; }
   .phaseBtns button .cur { margin-left: auto; font-size: 11px; color: #16a34a; font-weight: 700; }
   .logout { margin-top: 14px; background: none; border: 1px solid #d4d7e3; color: #8a90a3; border-radius: 10px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: inherit; }
@@ -80,12 +75,8 @@
     <h2>단계 전환</h2>
 
     <div id="loginBox">
-      <label>관리자 이메일</label>
-      <input id="email" type="email" readonly>
-      <label>비밀번호</label>
-      <input id="pw" type="password" placeholder="관리자 비밀번호" autocomplete="current-password">
-      <button class="primary" id="loginBtn">로그인</button>
-      <div class="msg" id="loginMsg"></div>
+      <button class="primary" id="googleBtn">Google로 로그인</button>
+      <div class="msg" id="loginMsg" style="margin-top:12px">Firebase 프로젝트를 만든 구글 계정으로 로그인하세요.</div>
     </div>
 
     <div id="controlBox" hidden>
@@ -115,7 +106,6 @@
 <script src="config.js"></script>
 <script>
   document.getElementById("q").textContent = POLL.title + " 관리";
-  document.getElementById("email").value = POLL.adminEmail;
 
   firebase.initializeApp(POLL.firebase);
   var db = firebase.database();
@@ -134,7 +124,7 @@
     setStatus(snap.val() === true ? "실시간 연결됨" : "연결 중…", snap.val() === true);
   });
 
-  // ----- 현황판과 동일한 공개 데이터 (로그인 불필요) -----
+  // ----- 공개 데이터 (로그인 불필요) -----
   db.ref(base + "/state/phase").on("value", function (snap) {
     curPhase = snap.val();
     document.getElementById("phaseNow").textContent =
@@ -167,38 +157,42 @@
     }, function () {});
   });
 
-  // ----- 로그인 -----
+  // ----- Google 로그인 -----
   var loginMsg = document.getElementById("loginMsg");
-  document.getElementById("loginBtn").addEventListener("click", function () {
-    var pw = document.getElementById("pw").value;
-    if (!pw) { loginMsg.className = "msg err"; loginMsg.textContent = "비밀번호를 입력하세요."; return; }
-    loginMsg.className = "msg"; loginMsg.textContent = "로그인 중…";
-    auth.signInWithEmailAndPassword(POLL.adminEmail, pw).catch(function (err) {
+  document.getElementById("googleBtn").addEventListener("click", function () {
+    loginMsg.className = "msg"; loginMsg.textContent = "구글 로그인 창을 여는 중…";
+    var provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).catch(function (err) {
       loginMsg.className = "msg err";
       var c = err && err.code;
-      if (c === "auth/configuration-not-found" || c === "auth/operation-not-allowed")
-        loginMsg.textContent = "콘솔 → Authentication에서 '이메일/비밀번호' 로그인을 먼저 켜주세요.";
-      else if (c === "auth/user-not-found")
-        loginMsg.textContent = "관리자 계정(" + POLL.adminEmail + ")을 콘솔에서 먼저 만들어주세요.";
-      else if (c === "auth/wrong-password" || c === "auth/invalid-credential" || c === "auth/invalid-login-credentials")
-        loginMsg.textContent = "비밀번호가 올바르지 않거나 계정이 없습니다.";
+      if (c === "auth/operation-not-allowed" || c === "auth/configuration-not-found")
+        loginMsg.textContent = "콘솔 → Authentication → 로그인 방법에서 'Google'을 먼저 켜주세요.";
+      else if (c === "auth/unauthorized-domain")
+        loginMsg.textContent = "콘솔 → Authentication → 설정 → 승인된 도메인에 이 사이트 도메인을 추가하세요.";
+      else if (c === "auth/popup-blocked")
+        loginMsg.textContent = "팝업이 차단되었습니다. 팝업을 허용한 뒤 다시 눌러주세요.";
+      else if (c === "auth/popup-closed-by-user" || c === "auth/cancelled-popup-request")
+        loginMsg.textContent = "로그인이 취소되었습니다.";
       else loginMsg.textContent = "로그인 실패: " + (c || err);
     });
   });
-  document.getElementById("pw").addEventListener("keydown", function (e) {
-    if (e.key === "Enter") document.getElementById("loginBtn").click();
-  });
   document.getElementById("logoutBtn").addEventListener("click", function () { auth.signOut(); });
 
-  // ----- 로그인 상태에 따른 화면 -----
+  // ----- 로그인 상태 -----
   var ctrlMsg = document.getElementById("ctrlMsg");
+  function showControl(who, authorized) {
+    document.getElementById("loginBox").hidden = true;
+    document.getElementById("controlBox").hidden = false;
+    document.getElementById("who").textContent = who;
+    Array.prototype.forEach.call(document.querySelectorAll(".phaseBtns button"), function (b) { b.disabled = !authorized; });
+  }
   auth.onAuthStateChanged(function (user) {
     if (!user) {
       document.getElementById("loginBox").hidden = false;
       document.getElementById("controlBox").hidden = true;
+      loginMsg.className = "msg"; loginMsg.textContent = "Firebase 프로젝트를 만든 구글 계정으로 로그인하세요.";
       return;
     }
-    // 관리자 등록(uid) 확인 — 없으면 최초 1회 등록(내 uid)
     db.ref(base + "/admin/uid").once("value").then(function (snap) {
       var uid = snap.val();
       if (!uid) {
@@ -207,21 +201,24 @@
       return uid;
     }).then(function (adminUid) {
       if (adminUid === user.uid) {
-        document.getElementById("loginBox").hidden = true;
-        document.getElementById("controlBox").hidden = false;
-        document.getElementById("who").textContent = "✓ 관리자로 로그인됨 (" + user.email + ")";
+        showControl("✓ 관리자로 로그인됨 (" + user.email + ")", true);
         ctrlMsg.textContent = "";
         highlightPhase();
       } else {
+        showControl("로그인됨: " + user.email, false);
         ctrlMsg.className = "msg err";
-        ctrlMsg.textContent = "다른 계정이 이미 관리자로 등록되어 있습니다.";
-        document.getElementById("loginBox").hidden = true;
-        document.getElementById("controlBox").hidden = false;
-        Array.prototype.forEach.call(document.querySelectorAll(".phaseBtns button"), function (b) { b.disabled = true; });
+        ctrlMsg.textContent = "이 계정은 관리자가 아닙니다 (다른 계정이 이미 등록됨).";
       }
     }).catch(function (err) {
-      ctrlMsg.className = "msg err";
-      ctrlMsg.textContent = "관리자 등록 확인 실패: " + (err && err.code || err);
+      if (String(err).indexOf("PERMISSION_DENIED") >= 0) {
+        showControl("로그인됨: " + user.email, false);
+        ctrlMsg.className = "msg err";
+        ctrlMsg.textContent = "이 구글 계정(" + user.email + ")은 관리자로 지정되어 있지 않습니다. " +
+          "config.js의 adminEmail과 DB의 admin/email을 이 주소로 맞춰주세요.";
+      } else {
+        ctrlMsg.className = "msg err";
+        ctrlMsg.textContent = "관리자 등록 확인 실패: " + (err && err.code || err);
+      }
     });
   });
 
@@ -236,6 +233,7 @@
   // ----- 단계 전환 버튼 -----
   Array.prototype.forEach.call(document.querySelectorAll(".phaseBtns button"), function (btn) {
     btn.addEventListener("click", function () {
+      if (btn.disabled) return;
       var next = btn.getAttribute("data-phase");
       if (next === curPhase) { ctrlMsg.className = "msg"; ctrlMsg.textContent = "이미 이 단계입니다."; return; }
       var label = { collect: "슬로건 접수", vote: "투표 개시", closed: "투표 마감" }[next];
@@ -245,10 +243,9 @@
         ctrlMsg.className = "msg ok"; ctrlMsg.textContent = "✓ '" + label + "'으로 변경되었습니다.";
       }).catch(function (err) {
         ctrlMsg.className = "msg err";
-        var c = err && err.code;
-        if (String(err).indexOf("PERMISSION_DENIED") >= 0 || c === "PERMISSION_DENIED")
+        if (String(err).indexOf("PERMISSION_DENIED") >= 0)
           ctrlMsg.textContent = "권한 거부 — 관리자 등록/규칙을 확인하세요.";
-        else ctrlMsg.textContent = "변경 실패: " + (c || err);
+        else ctrlMsg.textContent = "변경 실패: " + (err && err.code || err);
       });
     });
   });
