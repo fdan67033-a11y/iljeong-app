@@ -188,9 +188,16 @@
       var chip = document.createElement("span"); chip.className = "mchip";
       var team = teamByKey[s.team]; chip.textContent = team ? team.emoji + " " + team.name : s.team;
       chip.style.background = teamColor[s.team] || "#8a90a3"; main.appendChild(chip);
+      var btns = document.createElement("div");
+      btns.style.display = "flex"; btns.style.gap = "6px"; btns.style.flexShrink = "0";
+      var edit = document.createElement("button");
+      edit.className = "modDel"; edit.style.color = "#4f46e5"; edit.style.borderColor = "#c7c5f4";
+      edit.textContent = "수정"; edit.disabled = !isAdmin;
+      edit.addEventListener("click", function () { editSlogan(sid); });
       var del = document.createElement("button"); del.className = "modDel"; del.textContent = "삭제"; del.disabled = !isAdmin;
       del.addEventListener("click", function () { deleteSlogan(sid, s.text); });
-      row.appendChild(main); row.appendChild(del);
+      btns.appendChild(edit); btns.appendChild(del);
+      row.appendChild(main); row.appendChild(btns);
       el.appendChild(row);
     });
   }
@@ -201,6 +208,22 @@
       .then(function () { return db.ref(base + "/slogans/" + sid).remove(); })
       .then(function () { setStatus("문구를 삭제했습니다.", true); })
       .catch(function (err) { alert("삭제 실패: " + (String(err).indexOf("PERMISSION_DENIED") >= 0 ? "관리자 권한이 필요합니다" : (err && err.code || err))); });
+  }
+  function editSlogan(sid) {
+    if (!isAdmin) return;
+    var s = slogans[sid];
+    if (!s) return;
+    var nt = prompt("문구를 수정하세요 (강조는 **로 감싸기):", s.text);
+    if (nt === null) return;
+    nt = nt.trim();
+    if (!nt) { alert("빈 문구는 저장할 수 없습니다."); return; }
+    if (nt.length > 80) { alert("80자 이내로 입력해주세요."); return; }
+    var pub = { text: nt, team: s.team, ts: s.ts, font: s.font || "sans" };
+    if (s.desc) pub.desc = s.desc;
+    if (s.bg) pub.bg = s.bg;
+    db.ref(base + "/sloganList/" + sid).set(pub)
+      .then(function () { setStatus("문구를 수정했습니다.", true); })
+      .catch(function (err) { alert("수정 실패: " + (String(err).indexOf("PERMISSION_DENIED") >= 0 ? "관리자 권한이 필요합니다" : (err && err.code || err))); });
   }
   var ballotSet = {};
   POLL.voters.forEach(function (v) {
