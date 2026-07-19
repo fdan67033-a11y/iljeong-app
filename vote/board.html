@@ -171,25 +171,21 @@
       var s = slogans[sid];
       var card = document.createElement("div");
       card.className = "gcard";
+      var bg = bgCss(s.bg);
+      if (bg) { card.style.background = bg; card.style.borderColor = "transparent"; }
       var txt = document.createElement("div");
       txt.className = "txt";
       txt.innerHTML = "“" + sloganHtml(s.text) + "”";
       txt.style.fontFamily = fontCss(s.font);
+      if (bg) txt.style.color = "#1f2330";
       card.appendChild(txt);
       if (s.desc) {
         var dsc = document.createElement("div");
         dsc.className = "gdesc";
         dsc.textContent = s.desc;
+        if (bg) dsc.style.color = "#5f6472";
         card.appendChild(dsc);
       }
-      var meta = document.createElement("div");
-      meta.className = "meta";
-      var chip = document.createElement("span");
-      chip.className = "chip";
-      chip.textContent = teamLabel(s.team);
-      chip.style.background = teamColor[s.team] || "#8a90a3";
-      meta.appendChild(chip);
-      card.appendChild(meta);
       grid.appendChild(card);
     });
     galleryEl.appendChild(grid);
@@ -269,10 +265,16 @@
       n.txt.style.fontFamily = fontCss(slogans[sid].font);
       if (slogans[sid].desc) { n.dsc.textContent = slogans[sid].desc; n.dsc.hidden = false; }
       else { n.dsc.hidden = true; }
-      n.chip.textContent = teamLabel(slogans[sid].team);
-      n.chip.style.background = teamColor[slogans[sid].team] || "#8a90a3";
+      if (phase === "closed") {
+        n.chip.textContent = teamLabel(slogans[sid].team);
+        n.chip.style.background = teamColor[slogans[sid].team] || "#8a90a3";
+        n.chip.hidden = false;
+        n.fill.style.background = teamColor[slogans[sid].team] || "#8a90a3";
+      } else {
+        n.chip.hidden = true;
+        n.fill.style.background = "#6366f1";
+      }
       n.cnt.textContent = counts[sid] + "표";
-      n.fill.style.background = teamColor[slogans[sid].team] || "#8a90a3";
       n.fill.style.width = (maxCnt ? (counts[sid] / maxCnt) * 100 : 0) + "%";
       if (prevCounts[sid] !== undefined && prevCounts[sid] !== counts[sid]) {
         n.row.classList.add("flash");
@@ -312,15 +314,7 @@
       pill.textContent = "📝 슬로건 접수 중"; pill.className = "phasePill live";
       part.hidden = true; rankingEl.hidden = true; galleryEl.hidden = false;
       renderGallery();
-      var perTeam = {};
-      POLL.teams.forEach(function (t) { perTeam[t.key] = 0; });
-      Object.keys(slogans).forEach(function (sid) {
-        var k = slogans[sid].team;
-        if (perTeam[k] !== undefined) perTeam[k]++;
-      });
-      waiting.textContent = "팀별 접수: " + POLL.teams.map(function (t) {
-        return t.name + " " + perTeam[t.key] + "건";
-      }).join(" · ");
+      waiting.textContent = "총 " + Object.keys(slogans).length + "건 접수됨";
       return;
     }
 

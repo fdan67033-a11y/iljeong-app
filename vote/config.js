@@ -32,6 +32,16 @@ const POLL = {
     { key: "pen", label: "손글씨", css: "'Nanum Pen Script',cursive" },
   ],
 
+  // 슬로건 카드 배경색 (연한 파스텔 — 어두운 글씨가 잘 보이는 색). key는 DB에 저장.
+  cardBgs: [
+    { key: "none", label: "흰색", css: "" },
+    { key: "yellow", label: "노랑", css: "#fef3c7" },
+    { key: "blue", label: "파랑", css: "#dbeafe" },
+    { key: "green", label: "초록", css: "#dcfce7" },
+    { key: "pink", label: "분홍", css: "#fce7f3" },
+    { key: "purple", label: "보라", css: "#ede9fe" },
+  ],
+
   teams: [
     { key: "t1", name: "세입운영팀", emoji: "🦁" },
     { key: "t2", name: "재산세팀", emoji: "🐯" },
@@ -96,4 +106,9 @@ function sloganHtml(text) {
 function fontCss(key) {
   for (var i = 0; i < POLL.fonts.length; i++) if (POLL.fonts[i].key === key) return POLL.fonts[i].css;
   return POLL.fonts[0].css;
+}
+// 카드 배경색 key → CSS 색 (없음/모르는 값은 빈 문자열)
+function bgCss(key) {
+  for (var i = 0; i < POLL.cardBgs.length; i++) if (POLL.cardBgs[i].key === key) return POLL.cardBgs[i].css;
+  return "";
 }
