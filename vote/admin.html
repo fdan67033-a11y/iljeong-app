@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>공모 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Nanum+Pen+Script&family=Song+Myung&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -54,6 +57,14 @@
   .note { font-size: 12px; color: #8a90a3; line-height: 1.7; }
   .note code { font-family: Consolas, monospace; background: #f4f5fa; padding: 1px 5px; border-radius: 5px; }
   .boardLink { display: inline-block; margin-top: 4px; border-radius: 10px; padding: 10px 16px; font-size: 14px; text-decoration: none; background: #4f46e5; color: #fff; font-weight: 600; }
+  .modItem { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid #eef0f5; }
+  .modItem:last-child { border-bottom: none; }
+  .mtxt { font-size: 15px; line-height: 1.5; word-break: keep-all; }
+  .mchip { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 8px; color: #fff; display: inline-block; margin-top: 6px; }
+  .mdesc { font-size: 12px; color: #8a90a3; margin-top: 3px; }
+  .modDel { border: 1px solid #f0d5cd; background: #fff; color: #b3401f; border-radius: 8px; padding: 6px 12px; font-size: 13px; cursor: pointer; font-family: inherit; flex-shrink: 0; }
+  .modDel:disabled { opacity: .45; cursor: default; }
+  .modEmpty { font-size: 14px; color: #8a90a3; }
   [hidden] { display: none; }
 </style>
 </head>
@@ -92,8 +103,13 @@
   </div>
 
   <div class="card">
+    <h2 id="modTitle">제출된 문구 관리</h2>
+    <div class="note" style="margin-bottom:12px">부적절한 문구를 아래에서 바로 삭제할 수 있습니다 (관리자 로그인 필요).</div>
+    <div id="modList"><div class="modEmpty">불러오는 중…</div></div>
+  </div>
+
+  <div class="card">
     <div class="note">
-      · 부적절한 문구 삭제: 콘솔에서 <code>polls/slogan-2026/sloganList/해당항목</code> 삭제<br>
       · 특정인 재투표 허용: 콘솔에서 <code>polls/slogan-2026/ballots/그사람해시</code> 삭제<br>
       · 전체 표 초기화: 콘솔에서 <code>polls/slogan-2026/ballots</code> 삭제
     </div>
@@ -112,8 +128,12 @@
   var auth = firebase.auth();
   var base = "polls/" + POLL.id;
 
+  var teamByKey = {}, teamColor = {};
+  var MCOLORS = ["#6366f1", "#f59e0b", "#10b981", "#ec4899", "#38bdf8", "#f97316"];
+  POLL.teams.forEach(function (t, i) { teamByKey[t.key] = t; teamColor[t.key] = MCOLORS[i % MCOLORS.length]; });
+
   var LABEL = { collect: "📝 슬로건 접수 중", vote: "🗳️ 투표 진행 중", closed: "🏁 투표 마감" };
-  var curPhase = null;
+  var curPhase = null, isAdmin = false, slogans = {};
 
   function setStatus(text, on) {
     document.getElementById("statusText").textContent = text;
@@ -145,8 +165,43 @@
         : (missing.length === 0 ? "🎉 전원 제출 완료" : "");
   }
   db.ref(base + "/sloganList").on("value", function (snap) {
-    sloganCnt = snap.numChildren(); renderStats();
+    slogans = snap.val() || {};
+    sloganCnt = snap.numChildren(); renderStats(); renderMod();
   }, function () { setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false); });
+
+  // ----- 제출된 문구 관리 (관리자 삭제) -----
+  function renderMod() {
+    var el = document.getElementById("modList");
+    if (!el) return;
+    var ids = Object.keys(slogans).sort(function (a, b) { return (slogans[b].ts || 0) - (slogans[a].ts || 0); });
+    document.getElementById("modTitle").textContent = "제출된 문구 관리 (" + ids.length + ")";
+    if (!ids.length) { el.innerHTML = "<div class='modEmpty'>아직 제출된 문구가 없습니다.</div>"; return; }
+    el.innerHTML = "";
+    ids.forEach(function (sid) {
+      var s = slogans[sid];
+      var row = document.createElement("div"); row.className = "modItem";
+      var main = document.createElement("div"); main.style.flex = "1"; main.style.minWidth = "0";
+      var txt = document.createElement("div"); txt.className = "mtxt";
+      txt.innerHTML = sloganHtml(s.text); txt.style.fontFamily = fontCss(s.font);
+      main.appendChild(txt);
+      if (s.desc) { var d = document.createElement("div"); d.className = "mdesc"; d.textContent = s.desc; main.appendChild(d); }
+      var chip = document.createElement("span"); chip.className = "mchip";
+      var team = teamByKey[s.team]; chip.textContent = team ? team.emoji + " " + team.name : s.team;
+      chip.style.background = teamColor[s.team] || "#8a90a3"; main.appendChild(chip);
+      var del = document.createElement("button"); del.className = "modDel"; del.textContent = "삭제"; del.disabled = !isAdmin;
+      del.addEventListener("click", function () { deleteSlogan(sid, s.text); });
+      row.appendChild(main); row.appendChild(del);
+      el.appendChild(row);
+    });
+  }
+  function deleteSlogan(sid, text) {
+    if (!isAdmin) return;
+    if (!confirm("이 문구를 삭제할까요?\n\n" + text)) return;
+    db.ref(base + "/sloganList/" + sid).remove()
+      .then(function () { return db.ref(base + "/slogans/" + sid).remove(); })
+      .then(function () { setStatus("문구를 삭제했습니다.", true); })
+      .catch(function (err) { alert("삭제 실패: " + (String(err).indexOf("PERMISSION_DENIED") >= 0 ? "관리자 권한이 필요합니다" : (err && err.code || err))); });
+  }
   var ballotSet = {};
   POLL.voters.forEach(function (v) {
     db.ref(base + "/ballots/" + v.h + "/vote").on("value", function (snap) {
@@ -181,13 +236,16 @@
   // ----- 로그인 상태 -----
   var ctrlMsg = document.getElementById("ctrlMsg");
   function showControl(who, authorized) {
+    isAdmin = authorized;
     document.getElementById("loginBox").hidden = true;
     document.getElementById("controlBox").hidden = false;
     document.getElementById("who").textContent = who;
     Array.prototype.forEach.call(document.querySelectorAll(".phaseBtns button"), function (b) { b.disabled = !authorized; });
+    renderMod();
   }
   auth.onAuthStateChanged(function (user) {
     if (!user) {
+      isAdmin = false; renderMod();
       document.getElementById("loginBox").hidden = false;
       document.getElementById("controlBox").hidden = true;
       loginMsg.className = "msg"; loginMsg.textContent = "Firebase 프로젝트를 만든 구글 계정으로 로그인하세요.";

@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>청렴 슬로건 공모 현황</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Nanum+Pen+Script&family=Song+Myung&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -46,7 +49,8 @@
     background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1);
     border-radius: 16px; padding: 18px 20px;
   }
-  .gcard .txt { font-size: 19px; line-height: 1.55; font-weight: 600; }
+  .gcard .txt { font-size: 19px; line-height: 1.55; font-weight: 600; word-break: keep-all; }
+  .gcard .gdesc { font-size: 14px; color: #9aa0b4; margin-top: 8px; line-height: 1.5; }
   .gcard .meta { margin-top: 10px; }
   .chip { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 11px; color: #fff; }
 
@@ -62,7 +66,8 @@
   .rank { font-size: 20px; font-weight: 700; color: #9aa0b4; width: 34px; text-align: center; flex-shrink: 0; }
   .rrow.winner .rank { color: #facc15; }
   .rbody { flex: 1; min-width: 0; }
-  .rtxt { font-size: 19px; font-weight: 600; line-height: 1.4; }
+  .rtxt { font-size: 19px; font-weight: 600; line-height: 1.4; word-break: keep-all; }
+  .rdesc { font-size: 13px; color: #9aa0b4; margin-top: 4px; line-height: 1.4; }
   .rmeta { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
   .rtrack { flex: 1; background: rgba(255, 255, 255, .07); border-radius: 8px; height: 12px; overflow: hidden; }
   .rfill { height: 100%; border-radius: 8px; width: 0%; transition: width .6s cubic-bezier(.22, 1, .36, 1); }
@@ -163,19 +168,27 @@
     var grid = document.createElement("div");
     grid.className = "ggrid";
     ids.forEach(function (sid) {
+      var s = slogans[sid];
       var card = document.createElement("div");
       card.className = "gcard";
       var txt = document.createElement("div");
       txt.className = "txt";
-      txt.textContent = "“" + slogans[sid].text + "”";
+      txt.innerHTML = "“" + sloganHtml(s.text) + "”";
+      txt.style.fontFamily = fontCss(s.font);
+      card.appendChild(txt);
+      if (s.desc) {
+        var dsc = document.createElement("div");
+        dsc.className = "gdesc";
+        dsc.textContent = s.desc;
+        card.appendChild(dsc);
+      }
       var meta = document.createElement("div");
       meta.className = "meta";
       var chip = document.createElement("span");
       chip.className = "chip";
-      chip.textContent = teamLabel(slogans[sid].team);
-      chip.style.background = teamColor[slogans[sid].team] || "#8a90a3";
+      chip.textContent = teamLabel(s.team);
+      chip.style.background = teamColor[s.team] || "#8a90a3";
       meta.appendChild(chip);
-      card.appendChild(txt);
       card.appendChild(meta);
       grid.appendChild(card);
     });
@@ -192,6 +205,9 @@
     body.className = "rbody";
     var txt = document.createElement("div");
     txt.className = "rtxt";
+    var dsc = document.createElement("div");
+    dsc.className = "rdesc";
+    dsc.hidden = true;
     var meta = document.createElement("div");
     meta.className = "rmeta";
     var chip = document.createElement("span");
@@ -204,13 +220,14 @@
     meta.appendChild(chip);
     meta.appendChild(track);
     body.appendChild(txt);
+    body.appendChild(dsc);
     body.appendChild(meta);
     var cnt = document.createElement("div");
     cnt.className = "rcnt";
     row.appendChild(rank);
     row.appendChild(body);
     row.appendChild(cnt);
-    return { row: row, rank: rank, txt: txt, chip: chip, fill: fill, cnt: cnt };
+    return { row: row, rank: rank, txt: txt, dsc: dsc, chip: chip, fill: fill, cnt: cnt };
   }
 
   function renderRanking() {
@@ -248,7 +265,10 @@
       var isWinner = (phase === "closed" && maxCnt > 0 && counts[sid] === maxCnt);
       n.row.className = "rrow" + (isWinner ? " winner" : "");
       n.rank.textContent = isWinner ? "👑" : (i + 1);
-      n.txt.textContent = "“" + slogans[sid].text + "”";
+      n.txt.innerHTML = "“" + sloganHtml(slogans[sid].text) + "”";
+      n.txt.style.fontFamily = fontCss(slogans[sid].font);
+      if (slogans[sid].desc) { n.dsc.textContent = slogans[sid].desc; n.dsc.hidden = false; }
+      else { n.dsc.hidden = true; }
       n.chip.textContent = teamLabel(slogans[sid].team);
       n.chip.style.background = teamColor[slogans[sid].team] || "#8a90a3";
       n.cnt.textContent = counts[sid] + "표";

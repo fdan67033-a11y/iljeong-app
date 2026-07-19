@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>청렴 슬로건 공모</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Nanum+Pen+Script&family=Song+Myung&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -12,10 +15,7 @@
     min-height: 100vh; display: flex; flex-direction: column; align-items: center;
     padding: 24px 16px 90px;
   }
-  .badge {
-    font-size: 13px; font-weight: 600; color: #4f46e5; background: #e8e7fd;
-    border-radius: 999px; padding: 5px 14px;
-  }
+  .badge { font-size: 13px; font-weight: 600; color: #4f46e5; background: #e8e7fd; border-radius: 999px; padding: 5px 14px; }
   h1 { font-size: 23px; margin: 14px 0 4px; text-align: center; line-height: 1.4; }
   .sub { font-size: 13px; color: #8a90a3; text-align: center; max-width: 440px; line-height: 1.6; }
   .me { font-size: 14px; margin-top: 10px; color: #4f46e5; font-weight: 600; }
@@ -23,71 +23,54 @@
   #status[hidden] { display: none; }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: #f0b429; flex-shrink: 0; }
   .dot.on { background: #22c55e; }
-  #notice {
-    background: #fdf3e2; border: 1px solid #f0d5a0; color: #7a5a12; border-radius: 12px;
-    padding: 10px 14px; font-size: 13px; margin-bottom: 12px; max-width: 480px; width: 100%;
-    text-align: center;
-  }
+  #notice { background: #fdf3e2; border: 1px solid #f0d5a0; color: #7a5a12; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; max-width: 480px; width: 100%; text-align: center; }
   .section { width: 100%; max-width: 480px; }
-  .formCard {
-    background: #fff; border: 2px solid #e4e6ef; border-radius: 18px; padding: 18px;
-    margin-bottom: 20px;
-  }
-  .formCard textarea {
-    width: 100%; border: 1px solid #d4d7e3; border-radius: 12px; padding: 12px;
-    font-family: inherit; font-size: 16px; resize: none; height: 76px; outline-color: #4f46e5;
-  }
-  .formRow { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+
+  .formCard { background: #fff; border: 2px solid #e4e6ef; border-radius: 18px; padding: 18px; margin-bottom: 20px; }
+  .formCard textarea { width: 100%; border: 1px solid #d4d7e3; border-radius: 12px; padding: 12px; font-family: inherit; font-size: 16px; resize: none; outline-color: #4f46e5; }
+  #sloganInput { height: 70px; }
+  #descInput { height: 48px; font-size: 14px; margin-top: 10px; }
+  .hint { font-size: 12px; color: #8a90a3; margin-top: 6px; }
+  .fontRow { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+  .fontChip { border: 1px solid #d4d7e3; background: #fff; border-radius: 999px; padding: 7px 13px; font-size: 14px; cursor: pointer; font-family: inherit; color: #4b5060; }
+  .fontChip.sel { border-color: #4f46e5; background: #f4f3ff; color: #4f46e5; font-weight: 600; }
+  .preview { margin-top: 12px; padding: 14px; border: 1px dashed #d4d7e3; border-radius: 12px; background: #fbfbfe; min-height: 54px; }
+  .preview .pvLabel { font-size: 11px; color: #b6bac9; margin-bottom: 6px; }
+  .preview .pvText { font-size: 22px; line-height: 1.4; word-break: keep-all; }
+  .preview .pvDesc { font-size: 13px; color: #8a90a3; margin-top: 6px; }
+  .formRow { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
   #charCnt { font-size: 12px; color: #8a90a3; }
-  #sloganSubmit {
-    background: #4f46e5; color: #fff; border: none; border-radius: 10px;
-    padding: 10px 20px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
-  }
+  #sloganSubmit { background: #4f46e5; color: #fff; border: none; border-radius: 10px; padding: 10px 20px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
   #sloganSubmit:disabled { background: #c7c5f4; cursor: default; }
+
   h2 { font-size: 15px; color: #8a90a3; font-weight: 600; margin: 6px 2px 10px; }
   .gallery { display: flex; flex-direction: column; gap: 10px; }
-  .scard {
-    background: #fff; border: 2px solid #e4e6ef; border-radius: 16px; padding: 14px 16px;
-    text-align: left; width: 100%; font-family: inherit; display: block;
-  }
-  .scard .txt { font-size: 16px; line-height: 1.55; font-weight: 600; color: #1f2330; }
-  .scard .metaRow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .scard { background: #fff; border: 2px solid #e4e6ef; border-radius: 16px; padding: 14px 16px; text-align: left; width: 100%; font-family: inherit; display: block; }
+  .scard .txt { font-size: 18px; line-height: 1.5; color: #1f2330; word-break: keep-all; }
+  .scard .dsc { font-size: 13px; color: #8a90a3; margin-top: 5px; line-height: 1.5; }
+  .scard .metaRow { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
   .chip { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 10px; color: #fff; }
   .mineTag { font-size: 12px; color: #d85a30; font-weight: 600; }
+  .delBtn { margin-left: auto; border: 1px solid #f0d5cd; background: #fff; color: #b3401f; border-radius: 8px; padding: 5px 11px; font-size: 12px; cursor: pointer; font-family: inherit; }
   button.scard { cursor: pointer; transition: border-color .15s, background .15s; }
   button.scard:not(:disabled):hover { border-color: #4f46e5; }
   button.scard.sel { border-color: #4f46e5; background: #f4f3ff; }
   button.scard.mine { opacity: .55; cursor: not-allowed; }
-  .mark {
-    margin-left: auto; width: 24px; height: 24px; border-radius: 50%;
-    border: 2px solid #d4d7e3; display: flex; align-items: center; justify-content: center;
-    font-size: 14px; color: #fff; flex-shrink: 0;
-  }
+  .mark { margin-left: auto; width: 24px; height: 24px; border-radius: 50%; border: 2px solid #d4d7e3; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; flex-shrink: 0; }
   .sel .mark { background: #4f46e5; border-color: #4f46e5; }
-  #voteBar {
-    position: fixed; left: 0; right: 0; bottom: 0; background: #fff;
-    border-top: 1px solid #e4e6ef; padding: 12px 16px;
-    display: flex; align-items: center; justify-content: center; gap: 16px;
-  }
+
+  #voteBar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #e4e6ef; padding: 12px 16px; display: flex; align-items: center; justify-content: center; gap: 16px; }
   #voteBar[hidden] { display: none; }
   #picked { font-size: 14px; color: #8a90a3; }
-  #voteSubmit {
-    background: #4f46e5; color: #fff; border: none; border-radius: 12px;
-    padding: 13px 26px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit;
-  }
+  #voteSubmit { background: #4f46e5; color: #fff; border: none; border-radius: 12px; padding: 13px 26px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
   #voteSubmit:disabled { background: #c7c5f4; cursor: default; }
-  .bigCard {
-    background: #fff; border-radius: 20px; padding: 32px 26px; text-align: center;
-    width: 100%; max-width: 480px; border: 2px solid #e4e6ef; margin-top: 4px;
-  }
+
+  .bigCard { background: #fff; border-radius: 20px; padding: 32px 26px; text-align: center; width: 100%; max-width: 480px; border: 2px solid #e4e6ef; margin-top: 4px; }
   .bigCard .big { font-size: 52px; margin-bottom: 10px; }
   .bigCard p { font-size: 16px; margin: 4px 0; }
   .bigCard .picksList { font-size: 16px; font-weight: 700; margin: 12px 0; line-height: 1.8; }
   .bigCard .muted { font-size: 13px; color: #8a90a3; margin-top: 6px; line-height: 1.6; }
-  .goBoard {
-    display: inline-block; margin-top: 18px; border-radius: 10px; padding: 11px 18px;
-    font-size: 14px; text-decoration: none; background: #4f46e5; color: #fff; font-weight: 600;
-  }
+  .goBoard { display: inline-block; margin-top: 18px; border-radius: 10px; padding: 11px 18px; font-size: 14px; text-decoration: none; background: #4f46e5; color: #fff; font-weight: 600; }
   #err h2 { font-size: 19px; margin-bottom: 8px; color: #1f2330; }
   #err p { font-size: 14px; color: #8a90a3; line-height: 1.6; }
   footer { margin-top: auto; padding-top: 26px; font-size: 12px; color: #b6bac9; }
@@ -104,12 +87,26 @@
 
   <div class="section" id="phaseCollect" hidden>
     <div class="formCard">
-      <textarea id="sloganInput" maxlength="60" placeholder="예: 공정하게 부과하고, 투명하게 안내하겠습니다"></textarea>
+      <textarea id="sloganInput" maxlength="80" placeholder="예: 공정하게 부과하고, **투명하게** 안내하겠습니다"></textarea>
+      <div class="hint">강조할 부분을 <b>**별표 두 개**</b>로 감싸면 그 부분만 굵게 나옵니다.</div>
+      <div class="fontRow" id="fontRow"></div>
+      <textarea id="descInput" maxlength="120" placeholder="간단한 설명 (선택 입력)"></textarea>
+      <div class="preview">
+        <div class="pvLabel">미리보기</div>
+        <div class="pvText" id="pvText"></div>
+        <div class="pvDesc" id="pvDesc"></div>
+      </div>
       <div class="formRow">
-        <span id="charCnt">0 / 60자</span>
+        <span id="charCnt">0 / 80자</span>
         <button id="sloganSubmit" disabled>문구 제출</button>
       </div>
     </div>
+
+    <div id="mineWrap" hidden>
+      <h2 id="mineTitle">내가 올린 문구</h2>
+      <div class="gallery" id="mineList"></div>
+    </div>
+
     <h2 id="galleryCTitle">제출된 슬로건</h2>
     <div class="gallery" id="galleryC"></div>
   </div>
@@ -155,10 +152,7 @@
   var teamByKey = {};
   var teamColor = {};
   var COLORS = ["#6366f1", "#f59e0b", "#10b981", "#ec4899", "#38bdf8", "#f97316"];
-  POLL.teams.forEach(function (t, i) {
-    teamByKey[t.key] = t;
-    teamColor[t.key] = COLORS[i % COLORS.length];
-  });
+  POLL.teams.forEach(function (t, i) { teamByKey[t.key] = t; teamColor[t.key] = COLORS[i % COLORS.length]; });
 
   document.getElementById("q").textContent = POLL.title;
 
@@ -184,13 +178,10 @@
     var db = firebase.database();
     var base = "polls/" + POLL.id;
     var myRef = db.ref(base + "/ballots/" + myHash);
+    var mineKey = "myslogans:" + POLL.id + ":" + myHash;
 
-    var phase = null;           // collect | vote | closed
-    var slogans = {};           // sid -> {text, team, ts}
-    var picks = [];             // 선택한 슬로건 id 목록
-    var submitted = null;       // 제출 확정된 슬로건 id 목록
-    var sending = false;
-    var connected = false;
+    var phase = null, slogans = {}, picks = [], submitted = null;
+    var sending = false, connected = false, selFont = "sans";
 
     var meEl = document.getElementById("me");
     meEl.hidden = false;
@@ -199,7 +190,7 @@
     var subEl = document.getElementById("sub");
     var noticeEl = document.getElementById("notice");
     var input = document.getElementById("sloganInput");
-    input.maxLength = POLL.sloganMax;
+    var descInput = document.getElementById("descInput");
     var charCnt = document.getElementById("charCnt");
     var sloganSubmit = document.getElementById("sloganSubmit");
     var voteSubmit = document.getElementById("voteSubmit");
@@ -209,18 +200,63 @@
       document.getElementById("statusText").textContent = text;
       document.getElementById("dot").className = on ? "dot on" : "dot";
     }
-    function setNotice(text) {
-      noticeEl.hidden = !text;
-      noticeEl.textContent = text || "";
+    function setNotice(text) { noticeEl.hidden = !text; noticeEl.textContent = text || ""; }
+
+    // ----- localStorage: 내가 올린 문구 -----
+    function getMine() { try { return JSON.parse(localStorage.getItem(mineKey)) || []; } catch (e) { return []; } }
+    function setMine(arr) { localStorage.setItem(mineKey, JSON.stringify(arr)); }
+    function addMine(sid, text) { var a = getMine(); a.push({ sid: sid, text: text }); setMine(a); }
+    function removeMine(sid) { setMine(getMine().filter(function (x) { return x.sid !== sid; })); }
+
+    // ----- 글자체 칩 -----
+    var fontRow = document.getElementById("fontRow");
+    POLL.fonts.forEach(function (f) {
+      var b = document.createElement("button");
+      b.className = "fontChip" + (f.key === selFont ? " sel" : "");
+      b.textContent = f.label;
+      b.style.fontFamily = f.css;
+      b.addEventListener("click", function () {
+        selFont = f.key;
+        Array.prototype.forEach.call(fontRow.children, function (c) { c.classList.remove("sel"); });
+        b.classList.add("sel");
+        updatePreview();
+      });
+      fontRow.appendChild(b);
+    });
+
+    function updatePreview() {
+      var t = input.value.trim();
+      var pv = document.getElementById("pvText");
+      pv.innerHTML = t ? sloganHtml(t) : "<span style='color:#c7cad6'>여기에 미리보기가 나옵니다</span>";
+      pv.style.fontFamily = fontCss(selFont);
+      var d = descInput.value.trim();
+      document.getElementById("pvDesc").textContent = d;
     }
 
-    // ----- 슬로건 카드 생성 (제출 목록/투표 공용) -----
+    function refreshSloganForm() {
+      var len = input.value.trim().length;
+      charCnt.textContent = input.value.length + " / 80자";
+      sloganSubmit.disabled = !(connected && phase === "collect" && len > 0 && len <= 80 && !sending);
+      updatePreview();
+    }
+    input.addEventListener("input", refreshSloganForm);
+    descInput.addEventListener("input", updatePreview);
+
+    // ----- 슬로건 카드 (제출목록/투표 공용) -----
     function sloganCard(sid, s, opts) {
       var el = document.createElement(opts.button ? "button" : "div");
       el.className = "scard";
       var txt = document.createElement("div");
       txt.className = "txt";
-      txt.textContent = "“" + s.text + "”";
+      txt.innerHTML = sloganHtml(s.text);
+      txt.style.fontFamily = fontCss(s.font);
+      el.appendChild(txt);
+      if (s.desc) {
+        var dsc = document.createElement("div");
+        dsc.className = "dsc";
+        dsc.textContent = s.desc;
+        el.appendChild(dsc);
+      }
       var meta = document.createElement("div");
       meta.className = "metaRow";
       var chip = document.createElement("span");
@@ -241,13 +277,17 @@
         mark.textContent = picks.indexOf(sid) >= 0 ? "✓" : "";
         meta.appendChild(mark);
       }
-      el.appendChild(txt);
+      if (opts.deletable) {
+        var del = document.createElement("button");
+        del.className = "delBtn";
+        del.textContent = "삭제";
+        del.addEventListener("click", function () { deleteMine(sid); });
+        meta.appendChild(del);
+      }
       el.appendChild(meta);
       if (opts.button) {
-        if (s.team === voter.team) {
-          el.classList.add("mine");
-          el.disabled = true;
-        } else {
+        if (s.team === voter.team) { el.classList.add("mine"); el.disabled = true; }
+        else {
           if (picks.indexOf(sid) >= 0) el.classList.add("sel");
           el.addEventListener("click", function () { toggle(sid); });
         }
@@ -255,12 +295,9 @@
       return el;
     }
 
-    function sortedSloganIds() {
-      return Object.keys(slogans).sort(function (a, b) {
-        return (slogans[b].ts || 0) - (slogans[a].ts || 0);   // 최신순
-      });
+    function sortedIds() {
+      return Object.keys(slogans).sort(function (a, b) { return (slogans[b].ts || 0) - (slogans[a].ts || 0); });
     }
-
     function toggle(sid) {
       if (submitted || sending) return;
       var i = picks.indexOf(sid);
@@ -269,7 +306,7 @@
       render();
     }
 
-    // ----- 화면 라우팅: 단계·제출 여부에 따라 섹션 전환 -----
+    // ----- 화면 라우팅 -----
     function render() {
       var collect = document.getElementById("phaseCollect");
       var vote = document.getElementById("phaseVote");
@@ -277,161 +314,121 @@
       var closed = document.getElementById("phaseClosed");
       var done = document.getElementById("done");
       collect.hidden = vote.hidden = voteBar.hidden = closed.hidden = done.hidden = true;
-
       if (!phase) { subEl.textContent = "불러오는 중…"; return; }
 
       if (phase === "collect") {
         subEl.textContent = POLL.subCollect;
         collect.hidden = false;
+        // 내가 올린 문구 (아직 살아있는 것만)
+        var mine = getMine().filter(function (x) { return slogans[x.sid]; });
+        var mineWrap = document.getElementById("mineWrap");
+        var mineList = document.getElementById("mineList");
+        mineList.innerHTML = "";
+        if (mine.length) {
+          mineWrap.hidden = false;
+          document.getElementById("mineTitle").textContent = "내가 올린 문구 (" + mine.length + ")";
+          mine.forEach(function (x) { mineList.appendChild(sloganCard(x.sid, slogans[x.sid], { deletable: true })); });
+        } else mineWrap.hidden = true;
+        // 전체 갤러리
         var gc = document.getElementById("galleryC");
         gc.innerHTML = "";
-        var ids = sortedSloganIds();
-        document.getElementById("galleryCTitle").textContent =
-          "제출된 슬로건 (" + ids.length + "건)";
-        ids.forEach(function (sid) {
-          gc.appendChild(sloganCard(sid, slogans[sid], { button: false }));
-        });
+        var ids = sortedIds();
+        document.getElementById("galleryCTitle").textContent = "제출된 슬로건 (" + ids.length + "건)";
+        ids.forEach(function (sid) { gc.appendChild(sloganCard(sid, slogans[sid], {})); });
         refreshSloganForm();
         return;
       }
 
       if (phase === "vote") {
-        if (submitted) {
-          subEl.textContent = "";
-          done.hidden = false;
-          renderDone();
-          return;
-        }
+        if (submitted) { subEl.textContent = ""; done.hidden = false; renderDone(); return; }
         subEl.textContent = POLL.subVote;
-        vote.hidden = false;
-        voteBar.hidden = false;
+        vote.hidden = false; voteBar.hidden = false;
         var gv = document.getElementById("galleryV");
         gv.innerHTML = "";
-        sortedSloganIds().forEach(function (sid) {
-          gv.appendChild(sloganCard(sid, slogans[sid], { button: true }));
-        });
+        sortedIds().forEach(function (sid) { gv.appendChild(sloganCard(sid, slogans[sid], { button: true })); });
         pickedEl.textContent = picks.length + " / " + POLL.maxPicks + "개 선택됨";
         voteSubmit.disabled = !(connected && !sending && picks.length === POLL.maxPicks);
         return;
       }
-
-      // closed
       subEl.textContent = POLL.subClosed;
-      if (submitted) { done.hidden = false; renderDone(); }
-      else closed.hidden = false;
+      if (submitted) { done.hidden = false; renderDone(); } else closed.hidden = false;
     }
 
     function renderDone() {
       document.getElementById("doneName").textContent = voter.name;
-      document.getElementById("donePicks").innerHTML = "";
       var wrap = document.getElementById("donePicks");
+      wrap.innerHTML = "";
       (submitted || []).forEach(function (sid) {
         var line = document.createElement("div");
         var s = slogans[sid];
-        line.textContent = s ? "“" + s.text + "”" : "(삭제된 문구)";
+        if (s) { line.innerHTML = sloganHtml(s.text); line.style.fontFamily = fontCss(s.font); }
+        else line.textContent = "(삭제된 문구)";
         wrap.appendChild(line);
       });
     }
 
-    // ----- 접수 단계: 문구 제출 -----
-    function refreshSloganForm() {
-      var len = input.value.trim().length;
-      charCnt.textContent = input.value.length + " / " + POLL.sloganMax + "자";
-      sloganSubmit.disabled = !(connected && phase === "collect" && len > 0 && len <= POLL.sloganMax && !sending);
-    }
-    input.addEventListener("input", refreshSloganForm);
-
+    // ----- 문구 제출 -----
     sloganSubmit.addEventListener("click", function () {
       var text = input.value.trim();
       if (!text || phase !== "collect" || sending) return;
-      sending = true;
-      refreshSloganForm();
-      setStatus("제출 중…", false);
+      var desc = descInput.value.trim();
+      sending = true; refreshSloganForm(); setStatus("제출 중…", false);
       var settled = false;
       var timer = setTimeout(function () {
-        if (settled) return;
-        settled = true;
-        sending = false;
-        setStatus("전송이 지연되고 있습니다 — 다시 시도해주세요", false);
-        refreshSloganForm();
+        if (settled) return; settled = true; sending = false;
+        setStatus("전송이 지연되고 있습니다 — 다시 시도해주세요", false); refreshSloganForm();
       }, 8000);
       var sid = db.ref(base + "/slogans").push().key;
-      // 1) 비공개 원본(제출자 증명 포함) → 2) 공개 사본(갤러리·투표용) 순서로 저장
-      db.ref(base + "/slogans/" + sid).set({
-        proof: token,
-        h: myHash,
-        text: text,
-        team: voter.team,
-        ts: firebase.database.ServerValue.TIMESTAMP,
+      var priv = { proof: token, h: myHash, text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont };
+      var pub = { text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont };
+      if (desc) { priv.desc = desc; pub.desc = desc; }
+      db.ref(base + "/slogans/" + sid).set(priv).then(function () {
+        return db.ref(base + "/sloganList/" + sid).set(pub);
       }).then(function () {
-        return db.ref(base + "/sloganList/" + sid).set({
-          text: text,
-          team: voter.team,
-          ts: firebase.database.ServerValue.TIMESTAMP,
-        });
-      }).then(function () {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        sending = false;
-        input.value = "";
+        if (settled) return; settled = true; clearTimeout(timer); sending = false;
+        addMine(sid, text);
+        input.value = ""; descInput.value = "";
         setStatus("실시간 연결됨", true);
         setNotice("문구가 제출되었습니다! 여러 개 제출해도 됩니다.");
         render();
       }).catch(function (err) {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        sending = false;
-        if (String(err).indexOf("PERMISSION_DENIED") >= 0) {
-          setStatus("제출이 거부되었습니다 — 접수 기간이 아니거나 형식 오류", false);
-        } else {
-          setStatus("제출 실패 — 다시 시도해주세요", false);
-        }
+        if (settled) return; settled = true; clearTimeout(timer); sending = false;
+        setStatus(String(err).indexOf("PERMISSION_DENIED") >= 0 ? "제출이 거부되었습니다 — 접수 기간이 아니거나 형식 오류" : "제출 실패 — 다시 시도해주세요", false);
         render();
       });
     });
 
-    // ----- 투표 단계: 2개 골라 제출 (1회 확정) -----
+    // ----- 내 문구 삭제 (delReq → sloganList 삭제 → slogans 삭제) -----
+    function deleteMine(sid) {
+      if (phase !== "collect") { setNotice("접수 기간에만 삭제할 수 있습니다."); return; }
+      if (!confirm("이 문구를 삭제할까요?")) return;
+      setStatus("삭제 중…", false);
+      db.ref(base + "/slogans/" + sid + "/delReq").set(token)
+        .then(function () { return db.ref(base + "/sloganList/" + sid).remove(); })
+        .then(function () { return db.ref(base + "/slogans/" + sid).remove(); })
+        .then(function () { removeMine(sid); setStatus("실시간 연결됨", true); setNotice("문구가 삭제되었습니다."); })
+        .catch(function (err) {
+          setStatus(String(err).indexOf("PERMISSION_DENIED") >= 0 ? "삭제 거부됨 — 접수 기간이 아니거나 본인 문구가 아닙니다" : "삭제 실패 — 다시 시도해주세요", false);
+        });
+    }
+
+    // ----- 투표 제출 (1회 확정) -----
     voteSubmit.addEventListener("click", function () {
       if (!connected || sending || submitted || picks.length !== POLL.maxPicks || phase !== "vote") return;
-      var names = picks.map(function (sid) {
-        return slogans[sid] ? "“" + slogans[sid].text + "”" : sid;
-      }).join("\n");
+      var names = picks.map(function (sid) { return slogans[sid] ? slogans[sid].text : sid; }).join("\n");
       if (!confirm("제출하면 수정할 수 없습니다.\n\n" + names + "\n\n이대로 제출할까요?")) return;
-      sending = true;
-      render();
-      setStatus("전송 중…", false);
+      sending = true; render(); setStatus("전송 중…", false);
       var chosen = picks.slice();
       var timer = setTimeout(function () {
-        if (!sending) return;
-        sending = false;
-        setStatus("전송이 지연되고 있습니다 — 다시 시도해주세요", false);
-        render();
+        if (!sending) return; sending = false; setStatus("전송이 지연되고 있습니다 — 다시 시도해주세요", false); render();
       }, 8000);
-      myRef.set({
-        proof: token,
-        vote: {
-          picks: { a: chosen[0], b: chosen[1] },
-          ts: firebase.database.ServerValue.TIMESTAMP,
-        },
-      }).then(function () {
-        clearTimeout(timer);
-        sending = false;
-        submitted = chosen.slice();
-        setStatus("실시간 연결됨", true);
-        setNotice("");
-        render();
-      }).catch(function (err) {
-        clearTimeout(timer);
-        sending = false;
-        if (String(err).indexOf("PERMISSION_DENIED") >= 0) {
-          setStatus("거부되었습니다 — 이미 제출했거나 투표 기간이 아닙니다", false);
-        } else {
-          setStatus("전송 실패 — 다시 시도해주세요", false);
-        }
-        render();
-      });
+      myRef.set({ proof: token, vote: { picks: { a: chosen[0], b: chosen[1] }, ts: firebase.database.ServerValue.TIMESTAMP } })
+        .then(function () { clearTimeout(timer); sending = false; submitted = chosen.slice(); setStatus("실시간 연결됨", true); setNotice(""); render(); })
+        .catch(function (err) {
+          clearTimeout(timer); sending = false;
+          setStatus(String(err).indexOf("PERMISSION_DENIED") >= 0 ? "거부되었습니다 — 이미 제출했거나 투표 기간이 아닙니다" : "전송 실패 — 다시 시도해주세요", false);
+          render();
+        });
     });
 
     // ----- 실시간 구독 -----
@@ -440,41 +437,23 @@
       if (!sending) setStatus(connected ? "실시간 연결됨" : "연결 중…", connected);
       render();
     });
-
     db.ref(base + "/state/phase").on("value", function (snap) {
       var next = snap.val();
       if (phase === "collect" && next === "vote") setNotice("투표가 시작되었습니다!");
       if (next === "collect" && phase === "vote") setNotice("");
-      phase = next;
-      render();
-    }, function () {
-      setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false);
-    });
-
+      phase = next; render();
+    }, function () { setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false); });
     db.ref(base + "/sloganList").on("value", function (snap) {
       slogans = snap.val() || {};
-      // 삭제된 문구가 선택에 남아있으면 정리
       picks = picks.filter(function (sid) { return slogans[sid]; });
       render();
-    }, function () {
-      setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false);
-    });
-
+    }, function () { setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false); });
     myRef.child("vote").on("value", function (snap) {
-      if (sending) return;   // 전송 중의 낙관적 반영/롤백은 무시 — 확정은 set().then()에서만
+      if (sending) return;
       var v = snap.val();
-      if (v && v.picks && typeof v.picks.a === "string") {
-        submitted = [v.picks.a, v.picks.b];
-        render();
-      } else if (submitted) {
-        submitted = null;
-        picks = [];
-        setNotice("관리자가 재투표를 열어줬습니다 — 다시 선택해주세요");
-        render();
-      }
-    }, function () {
-      setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false);
-    });
+      if (v && v.picks && typeof v.picks.a === "string") { submitted = [v.picks.a, v.picks.b]; render(); }
+      else if (submitted) { submitted = null; picks = []; setNotice("관리자가 재투표를 열어줬습니다 — 다시 선택해주세요"); render(); }
+    }, function () { setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false); });
   }
 </script>
 </body>

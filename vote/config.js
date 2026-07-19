@@ -23,6 +23,15 @@ const POLL = {
   // 시드의 admin/email과 동일해야 하며, 이 계정으로 admin.html에서 'Google로 로그인'합니다.
   adminEmail: "semugijang11@gmail.com",
 
+  // 슬로건 글자체 (구글 폰트, 무료 OFL 라이선스). key는 DB에 저장, css는 표시에 사용.
+  fonts: [
+    { key: "sans", label: "기본", css: "'Malgun Gothic','Apple SD Gothic Neo',sans-serif" },
+    { key: "myeongjo", label: "명조", css: "'Song Myung',serif" },
+    { key: "gothic", label: "굵은고딕", css: "'Black Han Sans',sans-serif" },
+    { key: "round", label: "둥근", css: "'Jua',sans-serif" },
+    { key: "pen", label: "손글씨", css: "'Nanum Pen Script',cursive" },
+  ],
+
   teams: [
     { key: "t1", name: "세입운영팀", emoji: "🦁" },
     { key: "t2", name: "재산세팀", emoji: "🐯" },
@@ -75,4 +84,16 @@ function sha16(s) {
       return ("0" + b.toString(16)).slice(-2);
     }).join("").slice(0, 16);
   });
+}
+
+// 슬로건 표시용 안전 렌더: HTML 이스케이프 후 **강조** 만 굵게(<b>)로 변환
+function sloganHtml(text) {
+  var esc = String(text == null ? "" : text)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return esc.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+}
+// 글자체 key → CSS font-family (모르는 값은 기본 글꼴)
+function fontCss(key) {
+  for (var i = 0; i < POLL.fonts.length; i++) if (POLL.fonts[i].key === key) return POLL.fonts[i].css;
+  return POLL.fonts[0].css;
 }
