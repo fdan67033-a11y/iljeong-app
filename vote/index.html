@@ -786,6 +786,24 @@
     }
 
     function sortedIds() { return Object.keys(slogans).sort(function (a, b) { return (slogans[b].ts || 0) - (slogans[a].ts || 0); }); }
+
+    // 투표 화면은 접속할 때마다 순서를 무작위로 섞습니다 (앞에 놓인 문구가 유리해지지 않도록).
+    // 한 번 정해진 순서는 그 접속 동안 유지돼, 고르는 도중에 목록이 흔들리지 않습니다.
+    var voteOrder = null;
+    function votingIds() {
+      var ids = Object.keys(slogans);
+      if (!voteOrder) {
+        voteOrder = ids.slice();
+        for (var i = voteOrder.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = voteOrder[i]; voteOrder[i] = voteOrder[j]; voteOrder[j] = tmp;
+        }
+      } else {
+        voteOrder = voteOrder.filter(function (sid) { return slogans[sid]; });
+        ids.forEach(function (sid) { if (voteOrder.indexOf(sid) < 0) voteOrder.push(sid); });
+      }
+      return voteOrder;
+    }
     function toggle(sid) {
       if (submitted || sending) return;
       var i = picks.indexOf(sid);
@@ -925,7 +943,7 @@
         vote.hidden = false; voteBar.hidden = false;
         var gv = document.getElementById("galleryV");
         gv.innerHTML = "";
-        sortedIds().forEach(function (sid) { gv.appendChild(sloganCard(sid, slogans[sid], { button: true })); });
+        votingIds().forEach(function (sid) { gv.appendChild(sloganCard(sid, slogans[sid], { button: true })); });
         pickedEl.textContent = picks.length + " / " + POLL.maxPicks + "개 선택됨";
         voteSubmit.disabled = !(connected && !sending && picks.length === POLL.maxPicks);
         return;
