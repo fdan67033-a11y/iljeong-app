@@ -82,6 +82,12 @@
   #enter button, #pinNew button, #pinEnter button { width: 100%; background: #4f46e5; color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
   #enter button:disabled, #pinNew button:disabled, #pinEnter button:disabled { background: #c7c5f4; cursor: default; }
   #codeErr, #pinNewErr, #pinErr { font-size: 13px; color: #b3401f; margin-top: 10px; min-height: 16px; }
+  #pcInfo { text-align: left; border-color: #c7c5f4; background: #fbfaff; }
+  .pcLabel { font-size: 12px; color: #8a90a3; font-weight: 600; margin-bottom: 4px; }
+  .pcBig { font-size: 19px; font-weight: 700; color: #1f2330; word-break: break-all; line-height: 1.45; background: #fff; border: 1px solid #e4e6ef; border-radius: 10px; padding: 12px 14px; }
+  .pcBig.code { font-family: Consolas, monospace; letter-spacing: 1px; color: #4f46e5; }
+  .pcCopyBtn { width: 100%; margin-top: 14px; background: #4f46e5; color: #fff; border: none; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  #pcOpen { margin-top: 16px; background: none; border: 1px solid #d4d7e3; color: #6b7080; border-radius: 10px; padding: 10px 16px; font-size: 13px; cursor: pointer; font-family: inherit; }
   footer { margin-top: auto; padding-top: 26px; font-size: 12px; color: #b6bac9; }
   [hidden] { display: none; }
 </style>
@@ -168,6 +174,17 @@
     <p class="muted" style="margin-top:14px;font-size:12px">잊어버리면 관리자에게 초기화를 요청하세요.</p>
   </div>
 
+  <div class="bigCard" id="pcInfo" hidden>
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">💻 컴퓨터(PC)로 접속하려면</div>
+    <p class="muted" style="margin-bottom:12px">아래 주소로 들어간 뒤, 내 코드와 비밀번호를 입력하세요.</p>
+    <div class="pcLabel">주소</div>
+    <div class="pcBig" id="pcUrl"></div>
+    <div class="pcLabel" style="margin-top:12px">내 코드</div>
+    <div class="pcBig code" id="pcCode"></div>
+    <button id="pcCopy" class="pcCopyBtn">🔗 내 접속 링크 복사</button>
+    <div class="muted" id="pcCopied" style="min-height:16px;margin-top:8px"></div>
+  </div>
+
   <div class="bigCard" id="pinEnter" hidden>
     <div class="big">🔑</div>
     <h2>비밀번호 입력</h2>
@@ -238,6 +255,25 @@
     document.getElementById("pinNewWho").textContent = voter.name;
     document.getElementById("pinEnterWho").textContent = voter.name;
 
+    // ----- PC 접속 안내 (첫 화면에 크게) -----
+    var pcBase = location.href.split("?")[0].split("#")[0].replace(/index\.html$/, "");
+    document.getElementById("pcUrl").textContent = pcBase.replace(/^https?:\/\//, "");
+    document.getElementById("pcCode").textContent = token;
+    document.getElementById("pcCopy").addEventListener("click", function () {
+      var link = pcBase + "?t=" + encodeURIComponent(token);
+      var done = document.getElementById("pcCopied");
+      function ok() { done.textContent = "✓ 복사됐습니다. 카톡 '나에게 보내기' 등에 붙여넣어 PC에서 여세요."; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(ok, function () { done.textContent = link; });
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = link; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); ok(); } catch (e) { done.textContent = link; }
+        document.body.removeChild(ta);
+      }
+    });
+    function showPcInfo(on) { document.getElementById("pcInfo").hidden = !on; }
+
     function digitsOnly(el) {
       el.addEventListener("input", function () { el.value = el.value.replace(/[^0-9]/g, "").slice(0, 6); });
     }
@@ -245,7 +281,7 @@
 
     function start(pin) {
       try { localStorage.setItem(pinKey, pin); } catch (e) {}
-      newBox.hidden = true; enterBox.hidden = true;
+      newBox.hidden = true; enterBox.hidden = true; showPcInfo(false);
       document.getElementById("status").hidden = false;
       init(voter, myHash, pin, db, base);
     }
@@ -273,13 +309,13 @@
     });
 
     function showNew() {
-      newBox.hidden = false;
+      newBox.hidden = false; showPcInfo(true);
       document.getElementById("status").hidden = true;
       document.getElementById("sub").textContent = "";
       p1.focus();
     }
     function showEnterPin(msg) {
-      enterBox.hidden = false;
+      enterBox.hidden = false; showPcInfo(true);
       document.getElementById("status").hidden = true;
       document.getElementById("sub").textContent = "";
       enterErr.textContent = msg || "";
