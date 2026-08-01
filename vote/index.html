@@ -176,12 +176,10 @@
 
   <div class="bigCard" id="pcInfo" hidden>
     <div style="font-size:15px;font-weight:700;margin-bottom:4px">💻 컴퓨터(PC)로 접속하려면</div>
-    <p class="muted" style="margin-bottom:12px">아래 주소로 들어간 뒤, 내 코드와 비밀번호를 입력하세요.</p>
-    <div class="pcLabel">주소</div>
-    <div class="pcBig" id="pcUrl"></div>
-    <div class="pcLabel" style="margin-top:12px">내 코드</div>
-    <div class="pcBig code" id="pcCode"></div>
-    <button id="pcCopy" class="pcCopyBtn">🔗 내 접속 링크 복사</button>
+    <p class="muted" style="margin-bottom:12px">아래 주소를 컴퓨터 브라우저 주소창에 입력하세요.<br>(QR 카드에 적힌 주소와 같습니다)</p>
+    <div class="pcLabel">개인 고유 주소</div>
+    <div class="pcBig code" id="pcUrl"></div>
+    <button id="pcCopy" class="pcCopyBtn">🔗 주소 복사</button>
     <div class="muted" id="pcCopied" style="min-height:16px;margin-top:8px"></div>
   </div>
 
@@ -257,10 +255,10 @@
 
     // ----- PC 접속 안내 (첫 화면에 크게) -----
     var pcBase = location.href.split("?")[0].split("#")[0].replace(/index\.html$/, "");
-    document.getElementById("pcUrl").textContent = pcBase.replace(/^https?:\/\//, "");
-    document.getElementById("pcCode").textContent = token;
+    var myLink = pcBase + "?t=" + encodeURIComponent(token);
+    document.getElementById("pcUrl").textContent = myLink.replace(/^https?:\/\//, "");
     document.getElementById("pcCopy").addEventListener("click", function () {
-      var link = pcBase + "?t=" + encodeURIComponent(token);
+      var link = myLink;
       var done = document.getElementById("pcCopied");
       function ok() { done.textContent = "✓ 복사됐습니다. 카톡 '나에게 보내기' 등에 붙여넣어 PC에서 여세요."; }
       if (navigator.clipboard && navigator.clipboard.writeText) {
