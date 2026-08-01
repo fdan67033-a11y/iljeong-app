@@ -9,15 +9,15 @@ const POLL = {
 
   title: "청렴 슬로건 공모",
   subCollect: "고지서·알림톡에 실릴 새 슬로건을 제출해주세요 (팀별 1개 이상)",
-  subVote: "우리 팀 문구를 제외하고 2개를 골라주세요",
+  subVote: "우리 팀 문구를 제외하고 3개를 골라주세요",
   subClosed: "투표가 마감되었습니다 — 결과는 결과판에서 확인하세요",
 
-  // 1인당 투표 수 — 2 고정. 바꾸려면 index.html/board.html의 picks(a·b 슬롯)와
+  // 1인당 투표 수 — 3 고정. 바꾸려면 index.html/board.html의 picks(a·b·c 슬롯)와
   // Firebase 보안 규칙(firebase-rules.json)을 함께 고쳐야 합니다.
-  maxPicks: 2,
+  maxPicks: 3,
 
   // 슬로건 최대 글자 수 (서버 규칙과 동일하게 유지)
-  sloganMax: 60,
+  sloganMax: 80,
 
   // 관리자 = 이 구글 계정. Firebase 콘솔을 만든 구글 계정 이메일을 넣으세요.
   // 시드의 admin/email과 동일해야 하며, 이 계정으로 admin.html에서 'Google로 로그인'합니다.
@@ -124,7 +124,9 @@ function sloganHtml(text) {
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   esc = esc.replace(/\(([^()]+)\)/g, "<b>$1</b>");          // (강조) -> 굵게, 괄호는 표시 안 함
   esc = esc.replace(/（([^（）]+)）/g, "<b>$1</b>");           // 전각 괄호도 지원
-  return esc.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");      // 예전 ** 표기 호환
+  esc = esc.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");        // 예전 ** 표기 호환
+  var LF = String.fromCharCode(10), CR = String.fromCharCode(13);
+  return esc.split(CR).join("").split(LF).join("<br>");      // 줄바꿈(최대 2줄)
 }
 // 글자체 key → CSS font-family (모르는 값은 기본 글꼴)
 function fontCss(key) {

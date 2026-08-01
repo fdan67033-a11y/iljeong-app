@@ -354,7 +354,7 @@
     db.ref(base + "/ballots/" + v.h + "/vote").on("value", function (snap) {
       var val = snap.val();
       if (val && val.picks && typeof val.picks.a === "string") {
-        ballots[v.h] = [val.picks.a, val.picks.b];
+        ballots[v.h] = [val.picks.a, val.picks.b, val.picks.c];
       } else {
         ballots[v.h] = null;
       }

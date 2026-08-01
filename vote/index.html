@@ -26,6 +26,14 @@
   #notice { background: #fdf3e2; border: 1px solid #f0d5a0; color: #7a5a12; border-radius: 12px; padding: 10px 14px; font-size: 13px; margin-bottom: 12px; max-width: 480px; width: 100%; text-align: center; }
   .section { width: 100%; max-width: 480px; }
 
+  .formToggle {
+    width: 100%; background: #4f46e5; color: #fff; border: none; border-radius: 16px;
+    padding: 16px 18px; font-size: 17px; font-weight: 700; cursor: pointer; font-family: inherit;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+  }
+  .formToggle.open { border-radius: 16px 16px 0 0; margin-bottom: 0; }
+  .formCard[hidden] { display: none; }
+  .formCard.open { border-radius: 0 0 18px 18px; border-top: none; margin-top: 0; }
   .formCard { background: #fff; border: 2px solid #e4e6ef; border-radius: 18px; padding: 18px; margin-bottom: 20px; }
   .formCard textarea { width: 100%; border: 1px solid #d4d7e3; border-radius: 12px; padding: 12px; font-family: inherit; font-size: 16px; resize: none; outline-color: #4f46e5; }
   #sloganInput { height: 70px; }
@@ -90,6 +98,21 @@
   .pcCopyBtn { width: 100%; margin-top: 14px; background: #4f46e5; color: #fff; border: none; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
   #pcOpen { margin-top: 16px; background: none; border: 1px solid #d4d7e3; color: #6b7080; border-radius: 10px; padding: 10px 16px; font-size: 13px; cursor: pointer; font-family: inherit; }
   footer { margin-top: auto; padding-top: 26px; font-size: 12px; color: #b6bac9; }
+  #biModal { position: fixed; inset: 0; background: rgba(20,22,30,.55); display: flex; align-items: center; justify-content: center; padding: 18px; z-index: 50; }
+  #biModal[hidden] { display: none; }
+  .biSheet { background: #fff; border-radius: 20px; width: 100%; max-width: 460px; padding: 18px; max-height: 90vh; overflow-y: auto; }
+  .biHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; font-size: 15px; }
+  .biClose { border: none; background: #f1f2f7; color: #6b7080; border-radius: 8px; width: 30px; height: 30px; font-size: 15px; cursor: pointer; }
+  .biBox { border-radius: 14px; padding: 18px 16px; text-align: center; margin-bottom: 12px; }
+  .biBox.light { background: #fff; border: 1px solid #e4e6ef; }
+  .biBox.dark { background: #14202b; }
+  .biLogo { max-width: 190px; width: 70%; height: auto; display: block; margin: 0 auto 10px; }
+  .biText { line-height: 1.45; word-break: keep-all; font-weight: 700; }
+  .biBox.light .biText { color: #1f2330; }
+  .biBox.light .biText b { color: #f47b20; }
+  .biBox.dark .biText { color: #ffffff; }
+  .biBox.dark .biText b { color: #7dd3fc; }
+  .biNote { font-size: 12px; color: #8a90a3; text-align: center; }
   [hidden] { display: none; }
 </style>
 </head>
@@ -102,7 +125,8 @@
   <div id="notice" hidden></div>
 
   <div class="section" id="phaseCollect" hidden>
-    <div class="formCard">
+    <button id="formToggle" class="formToggle"><span>✏️ 슬로건 만들기</span><span id="toggleArrow">▾</span></button>
+    <div class="formCard" id="formCard" hidden>
       <textarea id="sloganInput" maxlength="80" placeholder="예: 우리 모두의 (세금), 우리 모두의 (약속)"></textarea>
       <div class="hint">강조할 부분을 <b>(괄호)</b>로 감싸면 그 부분만 굵게 나옵니다. 괄호는 표시되지 않아요.<br>예: 우리 모두의 (세금), 우리 모두의 (약속) → 우리 모두의 <b>세금</b>, 우리 모두의 <b>약속</b></div>
       <div class="pickerLabel">글자체</div>
@@ -193,6 +217,24 @@
     <div id="pinErr"></div>
   </div>
 
+  <div id="biModal" hidden>
+    <div class="biSheet">
+      <div class="biHead">
+        <b>고지서 표기 미리보기</b>
+        <button id="biClose" class="biClose">✕</button>
+      </div>
+      <div class="biBox light">
+        <img class="biLogo" src="bi-light.png" alt="청렴 기장" onerror="this.style.display='none'">
+        <div class="biText" id="biTextLight"></div>
+      </div>
+      <div class="biBox dark">
+        <img class="biLogo" src="bi-dark.png" alt="청렴 기장" onerror="this.style.display='none'">
+        <div class="biText" id="biTextDark"></div>
+      </div>
+      <div class="biNote">괄호로 감싼 부분이 강조색으로 표시됩니다.</div>
+    </div>
+  </div>
+
   <footer>청렴 슬로건 공모 · 실시간 투표</footer>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -278,7 +320,10 @@
     }
     digitsOnly(p1); digitsOnly(p2); digitsOnly(pIn);
 
+    var started = false;
     function start(pin) {
+      if (started) return;          // 중복 초기화 방지 (핸들러가 두 번 붙는 것 차단)
+      started = true;
       try { localStorage.setItem(pinKey, pin); } catch (e) {}
       newBox.hidden = true; enterBox.hidden = true; showPcInfo(false);
       document.getElementById("status").hidden = false;
@@ -458,6 +503,60 @@
     input.addEventListener("input", refreshSloganForm);
     descInput.addEventListener("input", updatePreview);
 
+    // ----- 접이식 폼 -----
+    var formToggle = document.getElementById("formToggle");
+    var formCard = document.getElementById("formCard");
+    function setForm(open) {
+      formCard.hidden = !open;
+      formCard.classList.toggle("open", open);
+      formToggle.classList.toggle("open", open);
+      document.getElementById("toggleArrow").textContent = open ? "▴" : "▾";
+      formToggle.querySelector("span").textContent = open ? "✏️ 슬로건 만들기 (닫기)" : "✏️ 슬로건 만들기";
+      if (open) refreshSloganForm();
+    }
+    formToggle.addEventListener("click", function () { setForm(formCard.hidden); });
+
+    // 줄바꿈 최대 2줄로 제한
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && input.value.indexOf(String.fromCharCode(10)) >= 0) e.preventDefault();
+    });
+    input.addEventListener("input", function () {
+      var NL = String.fromCharCode(10);
+      var parts = input.value.split(String.fromCharCode(13)).join("").split(NL);
+      if (parts.length > 2) {
+        input.value = parts[0] + NL + parts.slice(1).join(" ");
+        refreshSloganForm();   // 잘라낸 값으로 미리보기 다시 그리기
+      }
+    });
+
+    // ----- 고지서 표기 미리보기 (BI 아래 문구) -----
+    var biModal = document.getElementById("biModal");
+    document.getElementById("biClose").addEventListener("click", function () { biModal.hidden = true; });
+    biModal.addEventListener("click", function (e) { if (e.target === biModal) biModal.hidden = true; });
+
+    function biFontSize(text) {
+      // 한 줄 최대 길이에 맞춰 자동 축소 (길면 작게, 짧으면 크게)
+      var lines = String(text || "").split(String.fromCharCode(13)).join("").split(String.fromCharCode(10));
+      var longest = 0;
+      lines.forEach(function (l) { longest = Math.max(longest, l.replace(/[()]/g, "").length); });
+      if (longest <= 14) return 20;
+      if (longest <= 18) return 18;
+      if (longest <= 24) return 16;
+      if (longest <= 30) return 14;
+      return 13;
+    }
+    function showBiPreview(s) {
+      var html = sloganHtml(s.text);
+      var size = biFontSize(s.text);
+      ["biTextLight", "biTextDark"].forEach(function (id) {
+        var el = document.getElementById(id);
+        el.innerHTML = html;
+        el.style.fontFamily = fontCss(s.font);
+        el.style.fontSize = size + "px";
+      });
+      biModal.hidden = false;
+    }
+
     // ----- 슬로건 카드 (팀명은 우리 팀만 표시) -----
     function sloganCard(sid, s, opts) {
       var el = document.createElement(opts.button ? "button" : "div");
@@ -501,6 +600,14 @@
         meta.appendChild(wrap);
       }
       if (meta.childNodes.length) el.appendChild(meta);
+      if (!opts.button) {
+        el.style.cursor = "pointer";
+        el.title = "클릭하면 고지서 표기 미리보기";
+        el.addEventListener("click", function (e) {
+          if (e.target.tagName === "BUTTON") return;   // 수정/삭제 버튼은 제외
+          showBiPreview(s);
+        });
+      }
       if (opts.button) {
         if (own) { el.classList.add("mine"); el.disabled = true; }
         else {
@@ -531,6 +638,7 @@
       syncChips();
       sloganSubmit.textContent = "수정 저장";
       editCancel.hidden = false;
+      setForm(true);
       setNotice("수정 중입니다. 저장하면 기존 문구가 새 내용으로 바뀝니다.");
       refreshSloganForm();
       window.scrollTo(0, 0);
@@ -604,7 +712,7 @@
       sending = true; render(); setStatus("전송 중…", false);
       var chosen = picks.slice();
       var timer = setTimeout(function () { if (!sending) return; sending = false; setStatus("전송이 지연되고 있습니다 — 다시 시도해주세요", false); render(); }, 8000);
-      myRef.set({ proof: token, pin: myPin, vote: { picks: { a: chosen[0], b: chosen[1] }, ts: firebase.database.ServerValue.TIMESTAMP } })
+      myRef.set({ proof: token, pin: myPin, vote: { picks: { a: chosen[0], b: chosen[1], c: chosen[2] }, ts: firebase.database.ServerValue.TIMESTAMP } })
         .then(function () { clearTimeout(timer); sending = false; submitted = chosen.slice(); setStatus("실시간 연결됨", true); setNotice(""); render(); })
         .catch(function (err) { clearTimeout(timer); sending = false; setStatus(String(err).indexOf("PERMISSION_DENIED") >= 0 ? "거부되었습니다 — 이미 제출했거나 투표 기간이 아닙니다" : "전송 실패 — 다시 시도해주세요", false); render(); });
     });
@@ -686,7 +794,7 @@
     myRef.child("vote").on("value", function (snap) {
       if (sending) return;
       var v = snap.val();
-      if (v && v.picks && typeof v.picks.a === "string") { submitted = [v.picks.a, v.picks.b]; render(); }
+      if (v && v.picks && typeof v.picks.a === "string") { submitted = [v.picks.a, v.picks.b, v.picks.c]; render(); }
       else if (submitted) { submitted = null; picks = []; setNotice("관리자가 재투표를 열어줬습니다 — 다시 선택해주세요"); render(); }
     }, function () { setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false); });
   }
