@@ -131,7 +131,9 @@
     <button id="formToggle" class="formToggle"><span>✏️ 슬로건 만들기</span><span id="toggleArrow">▾</span></button>
     <div class="formCard" id="formCard" hidden>
       <textarea id="sloganInput" maxlength="80" placeholder="예: 우리 모두의 (세금), 우리 모두의 (약속)"></textarea>
-      <div class="hint">강조할 부분을 <b>(괄호)</b>로 감싸면 그 부분만 굵게 나옵니다. 괄호는 표시되지 않아요.<br>예: 우리 모두의 (세금), 우리 모두의 (약속) → 우리 모두의 <b>세금</b>, 우리 모두의 <b>약속</b></div>
+      <div class="hint">강조할 부분을 <b>(괄호)</b>로 감싸면 그 부분만 굵게 나옵니다. 괄호는 표시되지 않아요.<br>
+      예: 우리 모두의 (세금), 우리 모두의 (약속) → 우리 모두의 <b>세금</b>, 우리 모두의 <b>약속</b><br>
+      <b>↵ 줄바꿈은 최대 2줄까지</b> 가능합니다 (엔터 1번).</div>
       <div id="colorWrap" hidden>
         <div class="pickerLabel">강조 글자색 <span style="font-weight:400">(괄호 부분마다 지정)</span></div>
         <div id="colorPickers"></div>
@@ -636,9 +638,10 @@
         setTimeout(function () { fitText(img, txt, size); }, 60);
       });
 
-      document.getElementById("biNote").innerHTML = custom
+      var lineNote = "<br>문구는 <b>최대 2줄</b>까지 가능하며, 가장 긴 줄에 맞춰 글자 크기가 자동 조정됩니다.";
+      document.getElementById("biNote").innerHTML = (custom
         ? "글자색을 <b>직접 지정</b>했기 때문에 원본 BI(남색) 한 종류로만 표시됩니다."
-        : "색상을 지정하지 않아 <b>고지서 종류별 기본색</b>으로 3종을 보여줍니다.<br>글자색을 직접 고르면 원본 BI 한 종류로만 표시됩니다.";
+        : "색상을 지정하지 않아 <b>고지서 종류별 기본색</b>으로 3종을 보여줍니다.<br>글자색을 직접 고르면 원본 BI 한 종류로만 표시됩니다.") + lineNote;
       biModal.hidden = false;
     }
     // 실제 고지서 비율: 슬로건 폭 ≈ 로고 폭 × 1.2 (좌우로 각각 10% 정도만 넘침)
