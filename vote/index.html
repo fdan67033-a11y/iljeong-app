@@ -6,7 +6,7 @@
 <title>청렴 슬로건 공모</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&family=Nanum+Pen+Script&family=Song+Myung&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gowun+Dodum&family=Nanum+Gothic&family=Stylish&family=Song+Myung&family=Nanum+Myeongjo&family=Gowun+Batang&family=Nanum+Pen+Script&family=Nanum+Brush+Script&family=Gaegu&family=Dongle&family=Kirang+Haerang&family=Yeon+Sung&family=Gamja+Flower&family=Hi+Melody&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -33,6 +33,7 @@
   .hint { font-size: 12px; color: #8a90a3; margin-top: 6px; }
   .pickerLabel { font-size: 12px; color: #8a90a3; margin: 13px 2px 6px; font-weight: 600; }
   .fontRow { display: flex; flex-wrap: wrap; gap: 7px; }
+  .fontSel { width: 100%; border: 1px solid #d4d7e3; border-radius: 12px; padding: 12px; font-size: 16px; font-family: inherit; background: #fff; color: #1f2330; outline-color: #4f46e5; }
   .fontChip { border: 1px solid #d4d7e3; background: #fff; border-radius: 999px; padding: 7px 13px; font-size: 14px; cursor: pointer; font-family: inherit; color: #4b5060; display: flex; align-items: center; gap: 6px; }
   .fontChip.sel { border-color: #4f46e5; background: #f4f3ff; color: #4f46e5; font-weight: 600; }
   .swatch { width: 15px; height: 15px; border-radius: 4px; border: 1px solid #d4d7e3; flex-shrink: 0; }
@@ -105,7 +106,7 @@
       <textarea id="sloganInput" maxlength="80" placeholder="예: 공정하게 부과하고, **투명하게** 안내하겠습니다"></textarea>
       <div class="hint">강조할 부분을 <b>**별표 두 개**</b>로 감싸면 그 부분만 굵게 나옵니다.</div>
       <div class="pickerLabel">글자체</div>
-      <div class="fontRow" id="fontRow"></div>
+      <select id="fontSel" class="fontSel"></select>
       <div class="pickerLabel">카드 배경색</div>
       <div class="fontRow" id="bgRow"></div>
       <textarea id="descInput" maxlength="120" placeholder="간단한 설명 (선택 입력)"></textarea>
@@ -363,6 +364,7 @@
     var mineKey = "myslogans:" + POLL.id + ":" + myHash;
 
     var phase = null, slogans = {}, picks = [], submitted = null;
+    var ownChecked = {};   // sid -> true(내 글). 기기와 무관하게 서버 표식으로 판별
     var sending = false, connected = false, selFont = "sans", selBg = "none", editingSid = null;
 
     var meEl = document.getElementById("me");
@@ -385,25 +387,39 @@
     }
     function setNotice(text) { noticeEl.hidden = !text; noticeEl.textContent = text || ""; }
 
+    // 내 글인지: 서버에 저장된 own 표식과 내 토큰으로 계산한 값이 일치하면 내 글
+    function isMine(sid) {
+      if (ownChecked[sid]) return true;
+      return getMine().some(function (x) { return x.sid === sid; });   // 예전 제출분 호환
+    }
+    function refreshOwnership(done) {
+      var todo = Object.keys(slogans).filter(function (sid) {
+        return ownChecked[sid] === undefined && slogans[sid] && slogans[sid].own;
+      });
+      if (!todo.length) { done(); return; }
+      var left = todo.length;
+      todo.forEach(function (sid) {
+        sha16(token + ":" + sid).then(function (tag) {
+          ownChecked[sid] = (tag === slogans[sid].own);
+        }).catch(function () { ownChecked[sid] = false; })
+          .then(function () { if (--left === 0) done(); });
+      });
+    }
+
     function getMine() { try { return JSON.parse(localStorage.getItem(mineKey)) || []; } catch (e) { return []; } }
     function setMine(a) { localStorage.setItem(mineKey, JSON.stringify(a)); }
     function addMine(sid, text) { var a = getMine(); a.push({ sid: sid, text: text }); setMine(a); }
     function removeMine(sid) { setMine(getMine().filter(function (x) { return x.sid !== sid; })); }
 
     // ----- 글자체 / 배경색 칩 -----
-    var fontRow = document.getElementById("fontRow");
+    var fontSel = document.getElementById("fontSel");
     POLL.fonts.forEach(function (f) {
-      var b = document.createElement("button");
-      b.className = "fontChip" + (f.key === selFont ? " sel" : "");
-      b.textContent = f.label;
-      b.style.fontFamily = f.css;
-      b.addEventListener("click", function () {
-        selFont = f.key;
-        Array.prototype.forEach.call(fontRow.children, function (c) { c.classList.remove("sel"); });
-        b.classList.add("sel"); updatePreview();
-      });
-      fontRow.appendChild(b);
+      var o = document.createElement("option");
+      o.value = f.key; o.textContent = f.label;
+      fontSel.appendChild(o);
     });
+    fontSel.value = selFont;
+    fontSel.addEventListener("change", function () { selFont = fontSel.value; updatePreview(); });
     var bgRow = document.getElementById("bgRow");
     POLL.cardBgs.forEach(function (g) {
       var b = document.createElement("button");
@@ -421,7 +437,7 @@
       bgRow.appendChild(b);
     });
     function syncChips() {
-      Array.prototype.forEach.call(fontRow.children, function (c, i) { c.classList.toggle("sel", POLL.fonts[i].key === selFont); });
+      fontSel.value = selFont;
       Array.prototype.forEach.call(bgRow.children, function (c, i) { c.classList.toggle("sel", POLL.cardBgs[i].key === selBg); });
     }
 
@@ -556,10 +572,12 @@
         setStatus("전송이 지연되고 있습니다 — 다시 시도해주세요", false); refreshSloganForm();
       }, 8000);
       var sid = db.ref(base + "/slogans").push().key;
-      var priv = { proof: token, pin: myPin, h: myHash, text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg };
-      var pub = { text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg };
+      sha16(token + ":" + sid).then(function (ownTag) {
+      ownChecked[sid] = true;
+      var priv = { proof: token, pin: myPin, h: myHash, text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg, own: ownTag };
+      var pub = { text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg, own: ownTag };
       if (desc) { priv.desc = desc; pub.desc = desc; }
-      db.ref(base + "/slogans/" + sid).set(priv)
+      return db.ref(base + "/slogans/" + sid).set(priv)
         .then(function () { return db.ref(base + "/sloganList/" + sid).set(pub); })
         .then(function () {
           if (settled) return; settled = true; clearTimeout(timer); sending = false;
@@ -575,6 +593,7 @@
           setStatus(String(err).indexOf("PERMISSION_DENIED") >= 0 ? "제출이 거부되었습니다 — 접수 기간이 아니거나 형식 오류" : "제출 실패 — 다시 시도해주세요", false);
           render();
         });
+      });
     });
 
     // ----- 투표 제출 (1회 확정) -----
@@ -603,7 +622,9 @@
       if (phase === "collect") {
         subEl.textContent = POLL.subCollect;
         collect.hidden = false;
-        var mine = getMine().filter(function (x) { return slogans[x.sid]; });
+        var mine = Object.keys(slogans).filter(isMine).sort(function (a, b) {
+          return (slogans[b].ts || 0) - (slogans[a].ts || 0);
+        }).map(function (sid) { return { sid: sid }; });
         var mineWrap = document.getElementById("mineWrap");
         var mineList = document.getElementById("mineList");
         mineList.innerHTML = "";
@@ -660,7 +681,7 @@
     db.ref(base + "/sloganList").on("value", function (snap) {
       slogans = snap.val() || {};
       picks = picks.filter(function (sid) { return slogans[sid]; });
-      render();
+      refreshOwnership(render);
     }, function () { setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false); });
     myRef.child("vote").on("value", function (snap) {
       if (sending) return;
