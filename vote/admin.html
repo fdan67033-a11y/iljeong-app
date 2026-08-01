@@ -103,6 +103,12 @@
   </div>
 
   <div class="card">
+    <h2>비밀번호 관리</h2>
+    <div class="note" style="margin-bottom:12px">비밀번호를 잊은 사람은 여기서 초기화하면, 다음 접속 때 새로 만들 수 있습니다.</div>
+    <div id="pinList"><div class="modEmpty">불러오는 중…</div></div>
+  </div>
+
+  <div class="card">
     <h2 id="modTitle">제출된 문구 관리</h2>
     <div class="note" style="margin-bottom:12px">부적절한 문구를 아래에서 바로 삭제할 수 있습니다 (관리자 로그인 필요).</div>
     <div id="modList"><div class="modEmpty">불러오는 중…</div></div>
@@ -168,6 +174,44 @@
     slogans = snap.val() || {};
     sloganCnt = snap.numChildren(); renderStats(); renderMod();
   }, function () { setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false); });
+
+  // ----- 비밀번호 관리 (관리자 초기화) -----
+  var pinSet = {};
+  db.ref(base + "/pinSet").on("value", function (snap) {
+    pinSet = snap.val() || {};
+    renderPins();
+  }, function () { setStatus("읽기 권한 오류 — 보안 규칙 게시 여부 확인", false); });
+
+  function renderPins() {
+    var el = document.getElementById("pinList");
+    if (!el) return;
+    el.innerHTML = "";
+    POLL.voters.forEach(function (v) {
+      var row = document.createElement("div"); row.className = "modItem";
+      var main = document.createElement("div"); main.style.flex = "1"; main.style.minWidth = "0";
+      var nm = document.createElement("div"); nm.className = "mtxt";
+      var team = teamByKey[v.team];
+      nm.textContent = v.name + (team ? " · " + team.name : "");
+      var st = document.createElement("div"); st.className = "mdesc";
+      var has = pinSet[v.h] === true;
+      st.textContent = has ? "🔐 비밀번호 설정됨" : "— 아직 설정 안 함";
+      main.appendChild(nm); main.appendChild(st);
+      var btn = document.createElement("button");
+      btn.className = "modDel"; btn.textContent = "초기화";
+      btn.disabled = !isAdmin || !has;
+      btn.addEventListener("click", function () { resetPin(v); });
+      row.appendChild(main); row.appendChild(btn);
+      el.appendChild(row);
+    });
+  }
+  function resetPin(v) {
+    if (!isAdmin) return;
+    if (!confirm(v.name + " 님의 비밀번호를 초기화할까요?\n다음 접속 때 새 비밀번호를 만들게 됩니다.")) return;
+    db.ref(base + "/pins/" + v.h).remove()
+      .then(function () { return db.ref(base + "/pinSet/" + v.h).remove(); })
+      .then(function () { setStatus(v.name + " 비밀번호를 초기화했습니다.", true); })
+      .catch(function (err) { alert("초기화 실패: " + (String(err).indexOf("PERMISSION_DENIED") >= 0 ? "관리자 권한이 필요합니다" : (err && err.code || err))); });
+  }
 
   // ----- 제출된 문구 관리 (관리자 삭제) -----
   function renderMod() {
@@ -265,10 +309,11 @@
     document.getElementById("who").textContent = who;
     Array.prototype.forEach.call(document.querySelectorAll(".phaseBtns button"), function (b) { b.disabled = !authorized; });
     renderMod();
+    renderPins();
   }
   auth.onAuthStateChanged(function (user) {
     if (!user) {
-      isAdmin = false; renderMod();
+      isAdmin = false; renderMod(); renderPins();
       document.getElementById("loginBox").hidden = false;
       document.getElementById("controlBox").hidden = true;
       loginMsg.className = "msg"; loginMsg.textContent = "Firebase 프로젝트를 만든 구글 계정으로 로그인하세요.";
