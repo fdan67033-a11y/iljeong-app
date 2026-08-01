@@ -42,6 +42,13 @@
   .pickerLabel { font-size: 12px; color: #8a90a3; margin: 13px 2px 6px; font-weight: 600; }
   .fontRow { display: flex; flex-wrap: wrap; gap: 7px; }
   .fontSel { width: 100%; border: 1px solid #d4d7e3; border-radius: 12px; padding: 12px; font-size: 16px; font-family: inherit; background: #fff; color: #1f2330; outline-color: #4f46e5; }
+  .segRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .segName { font-size: 13px; font-weight: 700; color: #4b5060; min-width: 62px; }
+  .segDots { display: flex; gap: 5px; flex-wrap: wrap; }
+  .segDot { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #d4d7e3; cursor: pointer; padding: 0; background: #fff; position: relative; }
+  .segDot.sel { border-color: #1f2330; box-shadow: 0 0 0 2px #fff inset; }
+  .segDot.auto { font-size: 10px; width: auto; border-radius: 999px; padding: 3px 9px; height: 24px; color: #6b7080; font-family: inherit; }
+  .segDot.auto.sel { border-color: #4f46e5; color: #4f46e5; font-weight: 700; }
   .fontChip { border: 1px solid #d4d7e3; background: #fff; border-radius: 999px; padding: 7px 13px; font-size: 14px; cursor: pointer; font-family: inherit; color: #4b5060; display: flex; align-items: center; gap: 6px; }
   .fontChip.sel { border-color: #4f46e5; background: #f4f3ff; color: #4f46e5; font-weight: 600; }
   .swatch { width: 15px; height: 15px; border-radius: 4px; border: 1px solid #d4d7e3; flex-shrink: 0; }
@@ -103,14 +110,12 @@
   .biSheet { background: #fff; border-radius: 20px; width: 100%; max-width: 460px; padding: 18px; max-height: 90vh; overflow-y: auto; }
   .biHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; font-size: 15px; }
   .biClose { border: none; background: #f1f2f7; color: #6b7080; border-radius: 8px; width: 30px; height: 30px; font-size: 15px; cursor: pointer; }
-  .biBox { border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 12px; background: #fff; border: 1px solid #e4e6ef; position: relative; }
+  .biBox { border-radius: 14px; padding: 18px 8px 16px; text-align: center; margin-bottom: 12px; background: #fff; border: 1px solid #e4e6ef; position: relative; overflow: hidden; }
   .biTag { position: absolute; top: 8px; left: 10px; font-size: 11px; font-weight: 700; color: #8a90a3; }
-  .biLogo { max-width: 200px; width: 72%; height: auto; display: block; margin: 4px auto 8px; }
-  .biText { line-height: 1.45; word-break: keep-all; font-weight: 700; color: #1f2330; }
-  .biBox[data-kind="chenap"] .biText b { color: #f47b20; }
-  .biBox[data-kind="dokchok"] .biText b { color: #8a5a2b; }
-  .biBox[data-kind="susi"] .biText b { color: #16b6c9; }
-  .biNote { font-size: 12px; color: #8a90a3; text-align: center; }
+  .biLogo { max-width: 200px; width: 68%; height: auto; display: block; margin: 4px auto 8px; }
+  .biText { line-height: 1.4; font-weight: 700; color: #1f2330; }
+  .biLine { white-space: nowrap; display: inline-block; }   /* 한 줄 유지 + 실제 글자 폭 측정용 */
+  .biNote { font-size: 12px; color: #6b7080; text-align: center; line-height: 1.6; background: #f6f7fb; border-radius: 10px; padding: 10px 12px; }
   [hidden] { display: none; }
 </style>
 </head>
@@ -127,6 +132,10 @@
     <div class="formCard" id="formCard" hidden>
       <textarea id="sloganInput" maxlength="80" placeholder="예: 우리 모두의 (세금), 우리 모두의 (약속)"></textarea>
       <div class="hint">강조할 부분을 <b>(괄호)</b>로 감싸면 그 부분만 굵게 나옵니다. 괄호는 표시되지 않아요.<br>예: 우리 모두의 (세금), 우리 모두의 (약속) → 우리 모두의 <b>세금</b>, 우리 모두의 <b>약속</b></div>
+      <div id="colorWrap" hidden>
+        <div class="pickerLabel">강조 글자색 <span style="font-weight:400">(괄호 부분마다 지정)</span></div>
+        <div id="colorPickers"></div>
+      </div>
       <div class="pickerLabel">글자체</div>
       <select id="fontSel" class="fontSel"></select>
       <div class="pickerLabel">카드 배경색</div>
@@ -221,22 +230,8 @@
         <b>고지서 표기 미리보기</b>
         <button id="biClose" class="biClose">✕</button>
       </div>
-      <div class="biBox" data-kind="chenap">
-        <div class="biTag">체납분</div>
-        <img class="biLogo" src="bi-chenap.png" alt="청렴 기장" onerror="this.style.display='none'">
-        <div class="biText" id="biText0"></div>
-      </div>
-      <div class="biBox" data-kind="dokchok">
-        <div class="biTag">독촉분</div>
-        <img class="biLogo" src="bi-dokchok.png" alt="청렴 기장" onerror="this.style.display='none'">
-        <div class="biText" id="biText1"></div>
-      </div>
-      <div class="biBox" data-kind="susi">
-        <div class="biTag">수시분</div>
-        <img class="biLogo" src="bi-susi.png" alt="청렴 기장" onerror="this.style.display='none'">
-        <div class="biText" id="biText2"></div>
-      </div>
-      <div class="biNote">괄호로 감싼 부분이 고지서 종류별 강조색으로 표시됩니다.</div>
+      <div id="biBoxes"></div>
+      <div class="biNote" id="biNote"></div>
     </div>
   </div>
 
@@ -416,6 +411,7 @@
     var phase = null, slogans = {}, picks = [], submitted = null;
     var ownChecked = {};   // sid -> true(내 글). 기기와 무관하게 서버 표식으로 판별
     var sending = false, connected = false, selFont = "sans", selBg = "none", editingSid = null;
+    var selCols = [];   // 괄호 구간별 글자색 (빈 문자열 = 고지서색 자동)
 
     var meEl = document.getElementById("me");
     meEl.hidden = false;
@@ -491,10 +487,54 @@
       Array.prototype.forEach.call(bgRow.children, function (c, i) { c.classList.toggle("sel", POLL.cardBgs[i].key === selBg); });
     }
 
+    // ----- 괄호 구간별 글자색 선택 -----
+    function segLabel(text, i) {
+      var m = String(text || "").match(/\(([^()]+)\)|（([^（）]+)）|\*\*([^*]+)\*\*/g);
+      if (!m || !m[i]) return "구간 " + (i + 1);
+      return m[i].replace(/[()（）*]/g, "").slice(0, 8);
+    }
+    function renderColorPickers() {
+      var n = countEmphasis(input.value);
+      var wrap = document.getElementById("colorWrap");
+      var box = document.getElementById("colorPickers");
+      wrap.hidden = n === 0;
+      if (n === 0) { box.innerHTML = ""; return; }
+      selCols.length = n;
+      box.innerHTML = "";
+      for (var i = 0; i < n; i++) {
+        (function (i) {
+          var row = document.createElement("div");
+          row.className = "segRow";
+          var nm = document.createElement("span");
+          nm.className = "segName";
+          nm.textContent = segLabel(input.value, i);
+          var dots = document.createElement("div");
+          dots.className = "segDots";
+          POLL.textColors.forEach(function (c) {
+            var b = document.createElement("button");
+            var cur = selCols[i] || "";
+            var isSel = (c.key === "auto") ? !cur : (cur === c.css);
+            b.className = "segDot" + (c.key === "auto" ? " auto" : "") + (isSel ? " sel" : "");
+            if (c.key === "auto") b.textContent = "자동";
+            else b.style.background = c.css;
+            b.title = c.label;
+            b.addEventListener("click", function () {
+              selCols[i] = (c.key === "auto") ? "" : c.css;
+              renderColorPickers();
+              updatePreview();
+            });
+            dots.appendChild(b);
+          });
+          row.appendChild(nm); row.appendChild(dots);
+          box.appendChild(row);
+        })(i);
+      }
+    }
+
     function updatePreview() {
       var t = input.value.trim();
       var pv = document.getElementById("pvText");
-      pv.innerHTML = t ? sloganHtml(t) : "<span style='color:#c7cad6'>여기에 미리보기가 나옵니다</span>";
+      pv.innerHTML = t ? sloganHtml(t, selCols) : "<span style='color:#c7cad6'>여기에 미리보기가 나옵니다</span>";
       pv.style.fontFamily = fontCss(selFont);
       document.getElementById("pvDesc").textContent = descInput.value.trim();
       document.querySelector(".preview").style.background = bgCss(selBg) || "#fbfbfe";
@@ -503,6 +543,7 @@
       var len = input.value.trim().length;
       charCnt.textContent = input.value.length + " / 80자";
       sloganSubmit.disabled = !(connected && phase === "collect" && len > 0 && len <= 80 && !sending);
+      renderColorPickers();
       updatePreview();
     }
     input.addEventListener("input", refreshSloganForm);
@@ -550,16 +591,98 @@
       if (longest <= 30) return 14;
       return 13;
     }
+    function hasCustomColor(s) {
+      return !!(s.cols && s.cols.some(function (c) { return safeColor(c); }));
+    }
     function showBiPreview(s) {
-      var html = sloganHtml(s.text);
-      var size = biFontSize(s.text);
-      ["biText0", "biText1", "biText2"].forEach(function (id) {
-        var el = document.getElementById(id);
-        el.innerHTML = html;
-        el.style.fontFamily = fontCss(s.font);
-        el.style.fontSize = size + "px";
+      var custom = hasCustomColor(s);
+      // 커스텀 색상이 있으면 원본 BI 1종, 없으면 고지서 3종
+      var kinds = POLL.billKinds.filter(function (k) {
+        return custom ? k.key === "origin" : k.key !== "origin";
       });
+      var size = biFontSize(s.text);
+      var lines = String(s.text || "").split(String.fromCharCode(13)).join("")
+        .split(String.fromCharCode(10)).slice(0, 2);
+
+      var box = document.getElementById("biBoxes");
+      box.innerHTML = "";
+      kinds.forEach(function (k) {
+        var wrap = document.createElement("div");
+        wrap.className = "biBox";
+        var tag = document.createElement("div");
+        tag.className = "biTag";
+        tag.textContent = k.label;
+        var img = document.createElement("img");
+        img.className = "biLogo";
+        img.src = k.img;
+        img.alt = "청렴 기장";
+        img.onerror = function () { img.style.display = "none"; };
+        var txt = document.createElement("div");
+        txt.className = "biText";
+        txt.style.fontFamily = fontCss(s.font);
+        txt.style.fontSize = size + "px";
+        lines.forEach(function (line) {
+          var d = document.createElement("div");
+          d.className = "biLine";
+          // 색상 미지정 구간은 그 고지서의 기본색으로 보이도록 채워 넣음
+          d.innerHTML = sloganHtml(line, lineCols(s, lines, line, k.color));
+          d.style.color = "#1f2330";
+          txt.appendChild(d);
+        });
+        wrap.appendChild(tag); wrap.appendChild(img); wrap.appendChild(txt);
+        box.appendChild(wrap);
+        // 실제 고지서처럼 로고보다 좌우로 조금만 넓게 (로고 폭의 1.2배 안에서 자동 축소)
+        img.addEventListener("load", function () { fitText(img, txt, size); });
+        setTimeout(function () { fitText(img, txt, size); }, 60);
+      });
+
+      document.getElementById("biNote").innerHTML = custom
+        ? "글자색을 <b>직접 지정</b>했기 때문에 원본 BI(남색) 한 종류로만 표시됩니다."
+        : "색상을 지정하지 않아 <b>고지서 종류별 기본색</b>으로 3종을 보여줍니다.<br>글자색을 직접 고르면 원본 BI 한 종류로만 표시됩니다.";
       biModal.hidden = false;
+    }
+    // 실제 고지서 비율: 슬로건 폭 ≈ 로고 폭 × 1.2 (좌우로 각각 10% 정도만 넘침)
+    var BI_OVERFLOW = 1.2;
+    function fitText(img, txt, baseSize) {
+      var logoW = img.offsetWidth || 0;
+      if (!logoW) return;
+      var maxW = logoW * BI_OVERFLOW;
+      var lines = txt.querySelectorAll(".biLine");
+      if (!lines.length) return;
+      function widest() {
+        var w = 0;
+        Array.prototype.forEach.call(lines, function (l) {
+          w = Math.max(w, l.getBoundingClientRect().width);
+        });
+        return w;
+      }
+      // 가장 긴 줄이 목표 너비가 되도록 글자 크기를 비례 조정 (짧으면 키우고 길면 줄임)
+      var size = 20;
+      txt.style.fontSize = size + "px";
+      var w = widest();
+      if (w <= 0) return;
+      size = Math.max(10, Math.min(30, Math.floor(size * maxW / w)));
+      txt.style.fontSize = size + "px";
+      var guard = 0;
+      while (widest() > maxW && size > 10 && guard++ < 12) {
+        size -= 1;
+        txt.style.fontSize = size + "px";
+      }
+    }
+    // 줄 단위로 자를 때 색상 배열 위치가 어긋나지 않도록 보정
+    function lineCols(s, lines, line, fallback) {
+      var before = 0;
+      for (var i = 0; i < lines.length; i++) {
+        if (lines[i] === line) break;
+        before += countEmphasis(lines[i]);
+      }
+      var n = countEmphasis(line);
+      var out = [];
+      for (var j = 0; j < n; j++) {
+        var c = s.cols && s.cols[before + j];
+        out.push(safeColor(c) || fallback);
+      }
+      return out;
     }
 
     // ----- 슬로건 카드 (팀명은 우리 팀만 표시) -----
@@ -570,7 +693,7 @@
       if (bg) el.style.background = bg;
       var txt = document.createElement("div");
       txt.className = "txt";
-      txt.innerHTML = sloganHtml(s.text);
+      txt.innerHTML = sloganHtml(s.text, s.cols);
       txt.style.fontFamily = fontCss(s.font);
       el.appendChild(txt);
       if (s.desc) {
@@ -640,6 +763,7 @@
       descInput.value = s.desc || "";
       selFont = s.font || "sans";
       selBg = s.bg || "none";
+      selCols = (s.cols || []).slice();
       syncChips();
       sloganSubmit.textContent = "수정 저장";
       editCancel.hidden = false;
@@ -687,8 +811,10 @@
       var sid = db.ref(base + "/slogans").push().key;
       sha16(token + ":" + sid).then(function (ownTag) {
       ownChecked[sid] = true;
+      var cols = selCols.slice(0, countEmphasis(text)).map(function (c) { return c || ""; });
       var priv = { proof: token, pin: myPin, h: myHash, text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg, own: ownTag };
       var pub = { text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg, own: ownTag };
+      if (cols.join("")) { priv.cols = cols; pub.cols = cols; }
       if (desc) { priv.desc = desc; pub.desc = desc; }
       return db.ref(base + "/slogans/" + sid).set(priv)
         .then(function () { return db.ref(base + "/sloganList/" + sid).set(pub); })
@@ -696,7 +822,7 @@
           if (settled) return; settled = true; clearTimeout(timer); sending = false;
           addMine(sid, text);
           if (oldSid) { serverDelete(oldSid).then(function () { removeMine(oldSid); }).catch(function () {}); }
-          input.value = ""; descInput.value = ""; selFont = "sans"; selBg = "none"; syncChips(); endEdit();
+          input.value = ""; descInput.value = ""; selFont = "sans"; selBg = "none"; selCols = []; syncChips(); endEdit();
           setStatus("실시간 연결됨", true);
           setNotice(oldSid ? "문구가 수정되었습니다." : "문구가 제출되었습니다! 여러 개 제출해도 됩니다.");
           render();

@@ -63,6 +63,28 @@ const POLL = {
     { key: "stone", label: "베이지", css: "#f5f5f4" },
   ],
 
+  // 괄호 강조 부분의 글자색 (자유 선택). 첫 항목(auto)은 고지서 종류별 기본색 사용.
+  textColors: [
+    { key: "auto", label: "고지서색 자동", css: "" },
+    { key: "navy", label: "원본 남색", css: "#00448b" },
+    { key: "orange", label: "주황", css: "#fe7e00" },
+    { key: "brown", label: "갈색", css: "#a15500" },
+    { key: "cyan", label: "청록", css: "#00bec8" },
+    { key: "red", label: "빨강", css: "#d92b2b" },
+    { key: "green", label: "초록", css: "#2e9e4f" },
+    { key: "purple", label: "보라", css: "#7a4fd6" },
+    { key: "pink", label: "분홍", css: "#e0559b" },
+    { key: "black", label: "검정", css: "#1f2330" },
+  ],
+
+  // 고지서 종류별 기본 강조색 (미리보기)
+  billKinds: [
+    { key: "origin", label: "원본(BI)", img: "bi-origin.png", color: "#00448b" },
+    { key: "chenap", label: "체납분", img: "bi-chenap.png", color: "#fe7e00" },
+    { key: "dokchok", label: "독촉분", img: "bi-dokchok.png", color: "#a15500" },
+    { key: "susi", label: "수시분", img: "bi-susi.png", color: "#00bec8" },
+  ],
+
   teams: [
     { key: "t1", name: "세입운영팀", emoji: "🦁" },
     { key: "t2", name: "재산세팀", emoji: "🐯" },
@@ -119,14 +141,35 @@ function sha16(s) {
 
 // 슬로건 표시용 안전 렌더: HTML 이스케이프 후 (괄호) 안 글자를 굵게(<b>)로 변환
 // 괄호 기호는 아이폰·갤럭시 모두 기호 자판 첫 화면에 있어 입력이 쉽습니다.
-function sloganHtml(text) {
+// cols: 괄호 구간별 글자색 배열(선택). 없으면 기본 강조색(각 고지서 색상)을 씁니다.
+function sloganHtml(text, cols) {
   var esc = String(text == null ? "" : text)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  esc = esc.replace(/\(([^()]+)\)/g, "<b>$1</b>");          // (강조) -> 굵게, 괄호는 표시 안 함
-  esc = esc.replace(/（([^（）]+)）/g, "<b>$1</b>");           // 전각 괄호도 지원
-  esc = esc.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");        // 예전 ** 표기 호환
+  var idx = 0;
+  function wrap(whole, inner) {
+    var c = safeColor(cols && cols[idx]);
+    idx++;
+    return c ? '<b style="color:' + c + '">' + inner + "</b>" : "<b>" + inner + "</b>";
+  }
+  esc = esc.replace(/\(([^()]+)\)/g, wrap);                  // (강조) -> 굵게, 괄호는 표시 안 함
+  esc = esc.replace(/（([^（）]+)）/g, wrap);                   // 전각 괄호도 지원
+  esc = esc.replace(/\*\*([^*]+)\*\*/g, wrap);               // 예전 ** 표기 호환
   var LF = String.fromCharCode(10), CR = String.fromCharCode(13);
   return esc.split(CR).join("").split(LF).join("<br>");      // 줄바꿈(최대 2줄)
+}
+// 색상값 검증: 팔레트에 있는 #rrggbb 만 허용 (CSS 삽입 차단)
+function safeColor(c) {
+  if (typeof c !== "string" || !/^#[0-9a-fA-F]{6}$/.test(c)) return "";
+  var v = c.toLowerCase();
+  for (var i = 0; i < POLL.textColors.length; i++) {
+    if (POLL.textColors[i].css.toLowerCase() === v) return v;
+  }
+  return "";
+}
+// 괄호 구간 개수 세기 (색상 선택칸 개수)
+function countEmphasis(text) {
+  var m = String(text || "").match(/\(([^()]+)\)|（([^（）]+)）|\*\*([^*]+)\*\*/g);
+  return m ? m.length : 0;
 }
 // 글자체 key → CSS font-family (모르는 값은 기본 글꼴)
 function fontCss(key) {
