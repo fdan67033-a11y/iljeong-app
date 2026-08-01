@@ -117,11 +117,14 @@ function sha16(s) {
   });
 }
 
-// 슬로건 표시용 안전 렌더: HTML 이스케이프 후 **강조** 만 굵게(<b>)로 변환
+// 슬로건 표시용 안전 렌더: HTML 이스케이프 후 (괄호) 안 글자를 굵게(<b>)로 변환
+// 괄호 기호는 아이폰·갤럭시 모두 기호 자판 첫 화면에 있어 입력이 쉽습니다.
 function sloganHtml(text) {
   var esc = String(text == null ? "" : text)
     .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  return esc.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  esc = esc.replace(/\(([^()]+)\)/g, "<b>$1</b>");          // (강조) -> 굵게, 괄호는 표시 안 함
+  esc = esc.replace(/（([^（）]+)）/g, "<b>$1</b>");           // 전각 괄호도 지원
+  return esc.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");      // 예전 ** 표기 호환
 }
 // 글자체 key → CSS font-family (모르는 값은 기본 글꼴)
 function fontCss(key) {
