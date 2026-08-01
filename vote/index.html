@@ -73,12 +73,32 @@
   .btns { margin-left: auto; display: flex; gap: 6px; }
   .miniBtn { border: 1px solid #d4d7e3; background: #fff; color: #6b7080; border-radius: 8px; padding: 5px 11px; font-size: 12px; cursor: pointer; font-family: inherit; }
   .miniBtn.del { border-color: #f0d5cd; color: #b3401f; }
-  button.scard { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
-  button.scard:not(:disabled):hover { border-color: #4f46e5; }
-  button.scard.sel { border-color: #4f46e5; box-shadow: 0 0 0 3px #ded9fb; }
-  button.scard.mine { opacity: .6; cursor: not-allowed; }
+  .scard { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+  .scard:hover { border-color: #c7c5f4; }
+  .scard.sel { border-color: #4f46e5; box-shadow: 0 0 0 3px #ded9fb; }
+  .scard.mine { opacity: .6; }
   .mark { margin-left: auto; width: 24px; height: 24px; border-radius: 50%; border: 2px solid #c2c6d4; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #fff; flex-shrink: 0; }
   .sel .mark { background: #4f46e5; border-color: #4f46e5; }
+  .prevHint { margin-left: auto; font-size: 11px; color: #b6bac9; }
+  .winCard { background: #fffbeb; border: 2px solid #fcd34d; border-radius: 18px; padding: 20px 18px; text-align: center; margin-bottom: 18px; }
+  .winTag { font-size: 13px; font-weight: 700; color: #b45309; margin-bottom: 8px; }
+  .winText { font-size: 21px; font-weight: 700; line-height: 1.5; color: #1f2330; word-break: keep-all; }
+  .winCnt { font-size: 13px; color: #8a90a3; margin-top: 8px; }
+  .rankNo { font-size: 15px; font-weight: 700; color: #8a90a3; margin-right: 8px; }
+  .rankCnt { margin-left: auto; font-size: 14px; font-weight: 700; color: #4f46e5; }
+  .voteBtn {
+    width: 100%; margin-top: 12px; background: #fff; border: 2px solid #d4d7e3;
+    border-radius: 12px; padding: 13px 14px; font-size: 15px; font-weight: 700;
+    color: #4b5060; font-family: inherit; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .voteBtn .vbox {
+    width: 26px; height: 26px; border-radius: 7px; border: 2px solid #c2c6d4;
+    background: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 17px; color: #fff; flex-shrink: 0;
+  }
+  .voteBtn.on { border-color: #4f46e5; background: #f4f3ff; color: #4f46e5; }
+  .voteBtn.on .vbox { background: #4f46e5; border-color: #4f46e5; }
 
   #voteBar { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid #e4e6ef; padding: 12px 16px; display: flex; align-items: center; justify-content: center; gap: 16px; }
   #voteBar[hidden] { display: none; }
@@ -174,11 +194,15 @@
     <button id="voteSubmit" disabled>투표 제출 (최종)</button>
   </div>
 
-  <div class="bigCard" id="phaseClosed" hidden>
-    <div class="big">🏁</div>
-    <p><b>투표가 마감되었습니다</b></p>
-    <p class="muted">선정 결과는 결과판에서 확인할 수 있습니다.</p>
-    <a class="goBoard" href="board.html">📊 결과 보러 가기</a>
+  <div class="section" id="phaseClosed" hidden>
+    <div class="winCard" id="winCard" hidden>
+      <div class="winTag">👑 최종 선정</div>
+      <div class="winText" id="winText"></div>
+      <div class="winCnt" id="winCnt"></div>
+    </div>
+    <h2 id="resultTitle">전체 순위</h2>
+    <div class="gallery" id="resultList"></div>
+    <div style="text-align:center"><a class="goBoard" href="board.html">📊 큰 화면으로 보기</a></div>
   </div>
 
   <div class="bigCard" id="done" hidden>
@@ -410,7 +434,7 @@
     var myRef = db.ref(base + "/ballots/" + myHash);
     var mineKey = "myslogans:" + POLL.id + ":" + myHash;
 
-    var phase = null, slogans = {}, picks = [], submitted = null;
+    var phase = null, slogans = {}, picks = [], submitted = null, ballots = {};
     var ownChecked = {};   // sid -> true(내 글). 기기와 무관하게 서버 표식으로 판별
     var sending = false, connected = false, selFont = "sans", selBg = "none", editingSid = null;
     var selCols = [];   // 괄호 구간별 글자색 (빈 문자열 = 고지서색 자동)
@@ -690,7 +714,7 @@
 
     // ----- 슬로건 카드 (팀명은 우리 팀만 표시) -----
     function sloganCard(sid, s, opts) {
-      var el = document.createElement(opts.button ? "button" : "div");
+      var el = document.createElement("div");   // 카드 = 미리보기, 안의 체크박스 = 투표
       el.className = "scard";
       var bg = bgCss(s.bg);
       if (bg) el.style.background = bg;
@@ -713,10 +737,10 @@
         meta.appendChild(chip);
       }
       if (opts.button && !own) {
-        var mark = document.createElement("span");
-        mark.className = "mark";
-        mark.textContent = picks.indexOf(sid) >= 0 ? "✓" : "";
-        meta.appendChild(mark);
+        var hint = document.createElement("span");
+        hint.className = "prevHint";
+        hint.textContent = "👆 눌러서 고지서 미리보기";
+        meta.appendChild(hint);
       }
       if (opts.mine) {
         var wrap = document.createElement("span");
@@ -731,19 +755,31 @@
         meta.appendChild(wrap);
       }
       if (meta.childNodes.length) el.appendChild(meta);
-      if (!opts.button) {
-        el.style.cursor = "pointer";
-        el.title = "클릭하면 고지서 표기 미리보기";
-        el.addEventListener("click", function (e) {
-          if (e.target.tagName === "BUTTON") return;   // 수정/삭제 버튼은 제외
-          showBiPreview(s);
-        });
-      }
+
+      // 카드 본문 클릭 = 고지서 표기 미리보기 (투표 아님)
+      el.style.cursor = "pointer";
+      el.title = "누르면 고지서 표기 미리보기";
+      el.addEventListener("click", function (e) {
+        if (e.target.closest("button")) return;   // 수정/삭제/투표 버튼은 제외
+        showBiPreview(s);
+      });
+
+      // 투표 단계: 별도의 큰 체크박스로만 투표 (신중하게 고르도록 분리)
       if (opts.button) {
-        if (own) { el.classList.add("mine"); el.disabled = true; }
-        else {
-          if (picks.indexOf(sid) >= 0) el.classList.add("sel");
-          el.addEventListener("click", function () { toggle(sid); });
+        if (own) {
+          el.classList.add("mine");
+        } else {
+          var sel = picks.indexOf(sid) >= 0;
+          if (sel) el.classList.add("sel");
+          var vb = document.createElement("button");
+          vb.className = "voteBtn" + (sel ? " on" : "");
+          vb.innerHTML = '<span class="vbox">' + (sel ? "✓" : "") + "</span><span>" +
+            (sel ? "이 문구에 투표함" : "이 문구에 투표하기") + "</span>";
+          vb.addEventListener("click", function (e) {
+            e.stopPropagation();
+            toggle(sid);
+          });
+          el.appendChild(vb);
         }
       }
       return el;
@@ -894,8 +930,59 @@
         voteSubmit.disabled = !(connected && !sending && picks.length === POLL.maxPicks);
         return;
       }
+      // 마감: QR로 들어오면 결과가 바로 보이도록 순위를 표시
       subEl.textContent = POLL.subClosed;
-      if (submitted) { done.hidden = false; renderDone(); } else closed.hidden = false;
+      closed.hidden = false;
+      renderResults();
+    }
+
+    // ----- 마감 후 결과 (참가자 화면) -----
+    function renderResults() {
+      var counts = {}, ids = Object.keys(slogans);
+      ids.forEach(function (sid) { counts[sid] = 0; });
+      Object.keys(ballots).forEach(function (h) {
+        (ballots[h] || []).forEach(function (sid) {
+          if (counts[sid] !== undefined) counts[sid]++;
+        });
+      });
+      ids.sort(function (a, b) {
+        return (counts[b] - counts[a]) || ((slogans[a].ts || 0) - (slogans[b].ts || 0));
+      });
+      var max = 0;
+      ids.forEach(function (sid) { if (counts[sid] > max) max = counts[sid]; });
+
+      var win = document.getElementById("winCard");
+      if (ids.length && max > 0) {
+        win.hidden = false;
+        var top = slogans[ids[0]];
+        var wt = document.getElementById("winText");
+        wt.innerHTML = sloganHtml(top.text, top.cols);
+        wt.style.fontFamily = fontCss(top.font);
+        document.getElementById("winCnt").textContent = counts[ids[0]] + "표";
+      } else win.hidden = true;
+
+      document.getElementById("resultTitle").textContent = "전체 순위 (" + ids.length + "건)";
+      var list = document.getElementById("resultList");
+      list.innerHTML = "";
+      ids.forEach(function (sid, i) {
+        var s = slogans[sid];
+        var card = sloganCard(sid, s, {});
+        var meta = card.querySelector(".metaRow");
+        if (!meta) {
+          meta = document.createElement("div");
+          meta.className = "metaRow";
+          card.appendChild(meta);
+        }
+        var no = document.createElement("span");
+        no.className = "rankNo";
+        no.textContent = (counts[sid] === max && max > 0) ? "👑" : (i + 1) + "위";
+        meta.insertBefore(no, meta.firstChild);
+        var cnt = document.createElement("span");
+        cnt.className = "rankCnt";
+        cnt.textContent = counts[sid] + "표";
+        meta.appendChild(cnt);
+        list.appendChild(card);
+      });
     }
     function renderDone() {
       document.getElementById("doneName").textContent = voter.name;
@@ -931,6 +1018,19 @@
       if (v && v.picks && typeof v.picks.a === "string") { submitted = [v.picks.a, v.picks.b, v.picks.c]; render(); }
       else if (submitted) { submitted = null; picks = []; setNotice("관리자가 재투표를 열어줬습니다 — 다시 선택해주세요"); render(); }
     }, function () { setStatus("읽기 권한 오류 — 관리자에게 문의하세요", false); });
+
+    // 마감 후 순위 표시용 (표는 공개 데이터)
+    POLL.voters.forEach(function (v) {
+      db.ref(base + "/ballots/" + v.h + "/vote").on("value", function (snap) {
+        var val = snap.val();
+        if (val && val.picks && typeof val.picks.a === "string") {
+          ballots[v.h] = [val.picks.a, val.picks.b, val.picks.c];
+        } else {
+          delete ballots[v.h];
+        }
+        if (phase === "closed") renderResults();
+      }, function () {});
+    });
   }
 </script>
 </body>
