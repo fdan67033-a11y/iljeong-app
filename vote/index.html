@@ -103,15 +103,13 @@
   .biSheet { background: #fff; border-radius: 20px; width: 100%; max-width: 460px; padding: 18px; max-height: 90vh; overflow-y: auto; }
   .biHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; font-size: 15px; }
   .biClose { border: none; background: #f1f2f7; color: #6b7080; border-radius: 8px; width: 30px; height: 30px; font-size: 15px; cursor: pointer; }
-  .biBox { border-radius: 14px; padding: 18px 16px; text-align: center; margin-bottom: 12px; }
-  .biBox.light { background: #fff; border: 1px solid #e4e6ef; }
-  .biBox.dark { background: #14202b; }
-  .biLogo { max-width: 190px; width: 70%; height: auto; display: block; margin: 0 auto 10px; }
-  .biText { line-height: 1.45; word-break: keep-all; font-weight: 700; }
-  .biBox.light .biText { color: #1f2330; }
-  .biBox.light .biText b { color: #f47b20; }
-  .biBox.dark .biText { color: #ffffff; }
-  .biBox.dark .biText b { color: #7dd3fc; }
+  .biBox { border-radius: 14px; padding: 16px; text-align: center; margin-bottom: 12px; background: #fff; border: 1px solid #e4e6ef; position: relative; }
+  .biTag { position: absolute; top: 8px; left: 10px; font-size: 11px; font-weight: 700; color: #8a90a3; }
+  .biLogo { max-width: 200px; width: 72%; height: auto; display: block; margin: 4px auto 8px; }
+  .biText { line-height: 1.45; word-break: keep-all; font-weight: 700; color: #1f2330; }
+  .biBox[data-kind="chenap"] .biText b { color: #f47b20; }
+  .biBox[data-kind="dokchok"] .biText b { color: #8a5a2b; }
+  .biBox[data-kind="susi"] .biText b { color: #16b6c9; }
   .biNote { font-size: 12px; color: #8a90a3; text-align: center; }
   [hidden] { display: none; }
 </style>
@@ -223,15 +221,22 @@
         <b>고지서 표기 미리보기</b>
         <button id="biClose" class="biClose">✕</button>
       </div>
-      <div class="biBox light">
-        <img class="biLogo" src="bi-light.png" alt="청렴 기장" onerror="this.style.display='none'">
-        <div class="biText" id="biTextLight"></div>
+      <div class="biBox" data-kind="chenap">
+        <div class="biTag">체납분</div>
+        <img class="biLogo" src="bi-chenap.png" alt="청렴 기장" onerror="this.style.display='none'">
+        <div class="biText" id="biText0"></div>
       </div>
-      <div class="biBox dark">
-        <img class="biLogo" src="bi-dark.png" alt="청렴 기장" onerror="this.style.display='none'">
-        <div class="biText" id="biTextDark"></div>
+      <div class="biBox" data-kind="dokchok">
+        <div class="biTag">독촉분</div>
+        <img class="biLogo" src="bi-dokchok.png" alt="청렴 기장" onerror="this.style.display='none'">
+        <div class="biText" id="biText1"></div>
       </div>
-      <div class="biNote">괄호로 감싼 부분이 강조색으로 표시됩니다.</div>
+      <div class="biBox" data-kind="susi">
+        <div class="biTag">수시분</div>
+        <img class="biLogo" src="bi-susi.png" alt="청렴 기장" onerror="this.style.display='none'">
+        <div class="biText" id="biText2"></div>
+      </div>
+      <div class="biNote">괄호로 감싼 부분이 고지서 종류별 강조색으로 표시됩니다.</div>
     </div>
   </div>
 
@@ -548,7 +553,7 @@
     function showBiPreview(s) {
       var html = sloganHtml(s.text);
       var size = biFontSize(s.text);
-      ["biTextLight", "biTextDark"].forEach(function (id) {
+      ["biText0", "biText1", "biText2"].forEach(function (id) {
         var el = document.getElementById(id);
         el.innerHTML = html;
         el.style.fontFamily = fontCss(s.font);
