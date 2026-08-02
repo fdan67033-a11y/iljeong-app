@@ -568,7 +568,8 @@
     function refreshSloganForm() {
       var len = input.value.trim().length;
       charCnt.textContent = input.value.length + " / 80자";
-      sloganSubmit.disabled = !(connected && phase === "collect" && len > 0 && len <= 80 && !sending);
+      var full = !editingSid && myCount() >= POLL.maxSlogans;
+      sloganSubmit.disabled = !(connected && phase === "collect" && len > 0 && len <= 80 && !sending && !full);
       renderColorPickers();
       updatePreview();
     }
@@ -841,9 +842,14 @@
 
     // ----- 서버 삭제 (delReq → sloganList 삭제 → slogans 삭제) -----
     function serverDelete(sid) {
+      var slot = (slogans[sid] || {}).slot;
       return db.ref(base + "/slogans/" + sid + "/delReq").set(myPin)
         .then(function () { return db.ref(base + "/slogans/" + sid).remove(); })
-        .then(function () { return db.ref(base + "/sloganList/" + sid).remove(); });
+        .then(function () { return db.ref(base + "/sloganList/" + sid).remove(); })
+        .then(function () {
+          // 자리 반납 (슬로건이 지워진 뒤에만 서버가 허용)
+          if (slot) return db.ref(base + "/slotTaken/" + myHash + "/" + slot).remove();
+        });
     }
     function deleteMine(sid) {
       if (phase !== "collect") { setNotice("접수 기간에만 삭제할 수 있습니다."); return; }
@@ -853,42 +859,73 @@
         .catch(function (err) { setStatus(String(err).indexOf("PERMISSION_DENIED") >= 0 ? "삭제 거부됨 — 접수 기간이 아니거나 본인 문구가 아닙니다" : "삭제 실패 — 다시 시도해주세요", false); });
     }
 
-    // ----- 문구 제출 (신규 또는 수정저장=신규생성 후 기존삭제) -----
+    // ----- 내 제출 현황 (1인 maxSlogans개 제한) -----
+    function mySloganIds() { return Object.keys(slogans).filter(isMine); }
+    function myCount() { return mySloganIds().length; }
+    function freeSlot() {
+      var used = {};
+      mySloganIds().forEach(function (sid) {
+        if (slogans[sid] && slogans[sid].slot) used[String(slogans[sid].slot)] = 1;
+      });
+      for (var i = 1; i <= POLL.maxSlogans; i++) {
+        if (!used[String(i)]) return String(i);
+      }
+      return null;
+    }
+
+    // ----- 문구 제출 (수정은 기존 것을 먼저 지워 자리를 비운 뒤 새로 저장) -----
     sloganSubmit.addEventListener("click", function () {
       var text = input.value.trim();
       if (!text || phase !== "collect" || sending) return;
-      var desc = descInput.value.trim();
       var oldSid = editingSid;
+      if (!oldSid && myCount() >= POLL.maxSlogans) {
+        setNotice("한 사람당 " + POLL.maxSlogans + "개까지 올릴 수 있습니다. 기존 문구를 수정하거나 삭제해주세요.");
+        return;
+      }
+      var desc = descInput.value.trim();
       sending = true; refreshSloganForm(); setStatus(oldSid ? "수정 저장 중…" : "제출 중…", false);
       var settled = false;
       var timer = setTimeout(function () {
         if (settled) return; settled = true; sending = false;
         setStatus("전송이 지연되고 있습니다 — 다시 시도해주세요", false); refreshSloganForm();
-      }, 8000);
-      var sid = db.ref(base + "/slogans").push().key;
-      sha16(token + ":" + sid).then(function (ownTag) {
-      ownChecked[sid] = true;
-      var cols = selCols.slice(0, countEmphasis(text)).map(function (c) { return c || ""; });
-      var priv = { proof: token, pin: myPin, h: myHash, text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg, own: ownTag };
-      var pub = { text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg, own: ownTag };
-      if (cols.join("")) { priv.cols = cols; pub.cols = cols; }
-      if (desc) { priv.desc = desc; pub.desc = desc; }
-      return db.ref(base + "/slogans/" + sid).set(priv)
-        .then(function () { return db.ref(base + "/sloganList/" + sid).set(pub); })
-        .then(function () {
-          if (settled) return; settled = true; clearTimeout(timer); sending = false;
-          addMine(sid, text);
-          if (oldSid) { serverDelete(oldSid).then(function () { removeMine(oldSid); }).catch(function () {}); }
-          input.value = ""; descInput.value = ""; selFont = "sans"; selBg = "none"; selCols = []; syncChips(); endEdit();
-          setStatus("실시간 연결됨", true);
-          setNotice(oldSid ? "문구가 수정되었습니다." : "문구가 제출되었습니다! 여러 개 제출해도 됩니다.");
-          render();
-        })
-        .catch(function (err) {
-          if (settled) return; settled = true; clearTimeout(timer); sending = false;
-          setStatus(String(err).indexOf("PERMISSION_DENIED") >= 0 ? "제출이 거부되었습니다 — 접수 기간이 아니거나 형식 오류" : "제출 실패 — 다시 시도해주세요", false);
-          render();
+      }, 12000);
+
+      var pre = oldSid
+        ? serverDelete(oldSid).then(function () { removeMine(oldSid); delete slogans[oldSid]; })
+        : Promise.resolve();
+
+      pre.then(function () {
+        var sid = db.ref(base + "/slogans").push().key;
+        var slot = freeSlot();
+        if (!slot) throw new Error("SLOT_FULL");
+        return sha16(token + ":" + sid).then(function (ownTag) {
+          ownChecked[sid] = true;
+          var cols = selCols.slice(0, countEmphasis(text)).map(function (c) { return c || ""; });
+          var priv = { proof: token, pin: myPin, h: myHash, text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg, own: ownTag, slot: slot };
+          var pub = { text: text, team: voter.team, ts: firebase.database.ServerValue.TIMESTAMP, font: selFont, bg: selBg, own: ownTag, slot: slot };
+          if (cols.join("")) { priv.cols = cols; pub.cols = cols; }
+          if (desc) { priv.desc = desc; pub.desc = desc; }
+          // 슬롯을 먼저 점유해야 서버가 슬로건 생성을 허용합니다 (1인 2개 제한)
+          return db.ref(base + "/slotTaken/" + myHash + "/" + slot).set({ pin: myPin, sid: sid })
+            .then(function () { return db.ref(base + "/slogans/" + sid).set(priv); })
+            .then(function () { return db.ref(base + "/sloganList/" + sid).set(pub); })
+            .then(function () { addMine(sid, text); });
         });
+      }).then(function () {
+        if (settled) return; settled = true; clearTimeout(timer); sending = false;
+        input.value = ""; descInput.value = ""; selFont = "sans"; selBg = "none"; selCols = []; syncChips(); endEdit();
+        setStatus("실시간 연결됨", true);
+        setNotice(oldSid ? "문구가 수정되었습니다."
+          : "문구가 제출되었습니다! (" + myCount() + "/" + POLL.maxSlogans + "개)");
+        render();
+      }).catch(function (err) {
+        if (settled) return; settled = true; clearTimeout(timer); sending = false;
+        if (String(err).indexOf("SLOT_FULL") >= 0)
+          setStatus("한 사람당 " + POLL.maxSlogans + "개까지만 올릴 수 있습니다", false);
+        else if (String(err).indexOf("PERMISSION_DENIED") >= 0)
+          setStatus("제출이 거부되었습니다 — 접수 기간이 아니거나 개수 초과", false);
+        else setStatus("제출 실패 — 다시 시도해주세요", false);
+        render();
       });
     });
 
@@ -926,9 +963,20 @@
         mineList.innerHTML = "";
         if (mine.length) {
           mineWrap.hidden = false;
-          document.getElementById("mineTitle").textContent = "내가 올린 문구 (" + mine.length + ")";
+          document.getElementById("mineTitle").textContent =
+            "내가 올린 문구 (" + mine.length + " / " + POLL.maxSlogans + ")";
           mine.forEach(function (x) { mineList.appendChild(sloganCard(x.sid, slogans[x.sid], { mine: true })); });
         } else mineWrap.hidden = true;
+
+        // 1인 제출 한도에 도달하면 작성 폼을 잠금
+        var full = !editingSid && mine.length >= POLL.maxSlogans;
+        formToggle.disabled = full;
+        formToggle.style.opacity = full ? ".55" : "";
+        formToggle.style.cursor = full ? "default" : "pointer";
+        formToggle.querySelector("span").textContent = full
+          ? "✅ " + POLL.maxSlogans + "개 모두 제출했습니다 (수정·삭제 가능)"
+          : (formCard.hidden ? "✏️ 슬로건 만들기" : "✏️ 슬로건 만들기 (닫기)");
+        if (full && !formCard.hidden) setForm(false);
         var gc = document.getElementById("galleryC");
         gc.innerHTML = "";
         var ids = sortedIds();
