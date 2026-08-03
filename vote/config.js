@@ -75,9 +75,23 @@ const POLL = {
     { key: "brown", label: "갈색", css: "#a15500" },
     { key: "cyan", label: "청록", css: "#00bec8" },
     { key: "red", label: "빨강", css: "#d92b2b" },
-    { key: "green", label: "초록", css: "#2e9e4f" },
-    { key: "purple", label: "보라", css: "#7a4fd6" },
+    { key: "crimson", label: "진홍", css: "#b3123c" },
+    { key: "magenta", label: "자홍", css: "#c2185b" },
     { key: "pink", label: "분홍", css: "#e0559b" },
+    { key: "vermilion", label: "다홍", css: "#f04e23" },
+    { key: "gold", label: "황토", css: "#b8860b" },
+    { key: "olive", label: "올리브", css: "#6b8e23" },
+    { key: "grass", label: "연두", css: "#4c9a2a" },
+    { key: "green", label: "초록", css: "#2e9e4f" },
+    { key: "forest", label: "진초록", css: "#12704a" },
+    { key: "mint", label: "민트", css: "#00a389" },
+    { key: "sky", label: "하늘", css: "#0aa2e8" },
+    { key: "blue", label: "파랑", css: "#1e5fd0" },
+    { key: "ultramarine", label: "군청", css: "#17307a" },
+    { key: "indigo", label: "남보라", css: "#4b3ec9" },
+    { key: "purple", label: "보라", css: "#7a4fd6" },
+    { key: "plum", label: "자주", css: "#8e2f8e" },
+    { key: "gray", label: "회색", css: "#5f6470" },
     { key: "black", label: "검정", css: "#1f2330" },
   ],
 
@@ -163,12 +177,20 @@ function sloganHtml(text, cols) {
 }
 // 색상값 검증: 팔레트에 있는 #rrggbb 만 허용 (CSS 삽입 차단)
 function safeColor(c) {
+  // #rrggbb 형식만 허용 — 색상값 외에는 어떤 것도 스타일에 들어갈 수 없습니다.
   if (typeof c !== "string" || !/^#[0-9a-fA-F]{6}$/.test(c)) return "";
-  var v = c.toLowerCase();
-  for (var i = 0; i < POLL.textColors.length; i++) {
-    if (POLL.textColors[i].css.toLowerCase() === v) return v;
-  }
-  return "";
+  return c.toLowerCase();
+}
+// 흰 배경에서 안 보일 만큼 밝은 색은 읽히도록 어둡게 조정
+function readableColor(hex) {
+  var c = safeColor(hex);
+  if (!c) return "";
+  var r = parseInt(c.substr(1, 2), 16), g = parseInt(c.substr(3, 2), 16), b = parseInt(c.substr(5, 2), 16);
+  var lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (lum <= 0.72) return c;
+  var t = Math.min(0.75, (lum - 0.72) / 0.28 * 0.8);
+  r = Math.round(r * (1 - t)); g = Math.round(g * (1 - t)); b = Math.round(b * (1 - t));
+  return "#" + [r, g, b].map(function (v) { return ("0" + v.toString(16)).slice(-2); }).join("");
 }
 // 괄호 구간 개수 세기 (색상 선택칸 개수)
 function countEmphasis(text) {

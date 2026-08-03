@@ -49,6 +49,9 @@
   .segDot.sel { border-color: #1f2330; box-shadow: 0 0 0 2px #fff inset; }
   .segDot.auto { font-size: 10px; width: auto; border-radius: 999px; padding: 3px 9px; height: 24px; color: #6b7080; font-family: inherit; }
   .segDot.auto.sel { border-color: #4f46e5; color: #4f46e5; font-weight: 700; }
+  .pickWrap { display: inline-flex; align-items: center; justify-content: center; overflow: hidden; }
+  .pickInput { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; padding: 0; border: none; }
+  .pickIcon { font-size: 13px; line-height: 1; pointer-events: none; }
   .fontChip { border: 1px solid #d4d7e3; background: #fff; border-radius: 999px; padding: 7px 13px; font-size: 14px; cursor: pointer; font-family: inherit; color: #4b5060; display: flex; align-items: center; gap: 6px; }
   .fontChip.sel { border-color: #4f46e5; background: #f4f3ff; color: #4f46e5; font-weight: 600; }
   .swatch { width: 15px; height: 15px; border-radius: 4px; border: 1px solid #d4d7e3; flex-shrink: 0; }
@@ -552,6 +555,32 @@
             });
             dots.appendChild(b);
           });
+
+          // 팔레트에 없는 색은 직접 고르기 (너무 밝으면 읽히도록 자동으로 어둡게)
+          var known = POLL.textColors.some(function (c) { return c.css && c.css === selCols[i]; });
+          var customOn = !!selCols[i] && !known;
+          var pick = document.createElement("label");
+          pick.className = "segDot pickWrap" + (customOn ? " sel" : "");
+          pick.title = "직접 고르기";
+          if (customOn) pick.style.background = selCols[i];
+          var picker = document.createElement("input");
+          picker.type = "color";
+          picker.className = "pickInput";
+          picker.value = selCols[i] || "#4f46e5";
+          picker.addEventListener("input", function () {
+            selCols[i] = readableColor(picker.value);
+            renderColorPickers();
+            updatePreview();
+          });
+          pick.appendChild(picker);
+          if (!customOn) {
+            var plus = document.createElement("span");
+            plus.className = "pickIcon";
+            plus.textContent = "🎨";
+            pick.appendChild(plus);
+          }
+          dots.appendChild(pick);
+
           row.appendChild(nm); row.appendChild(dots);
           box.appendChild(row);
         })(i);
