@@ -247,6 +247,21 @@
     document.getElementById("dot").className = on ? "dot on" : "dot";
   }
 
+  // 어두운 현황판 배경에서도 읽히도록, 진한 강조색은 밝게 보정해서 표시
+  function brightenBolds(el) {
+    Array.prototype.forEach.call(el.querySelectorAll("b[style]"), function (b) {
+      var m = (b.style.color || "").match(/\d+/g);
+      if (!m || m.length < 3) return;
+      var r = +m[0], g = +m[1], bl = +m[2];
+      var lum = (0.299 * r + 0.587 * g + 0.114 * bl) / 255;
+      if (lum >= 0.5) return;
+      var t = (0.5 - lum) / 0.5 * 0.75;
+      b.style.color = "rgb(" + [r, g, bl].map(function (v) {
+        return Math.round(v + (255 - v) * t);
+      }).join(",") + ")";
+    });
+  }
+
   function teamLabel(teamKey) {
     var team = teamByKey[teamKey];
     return team ? team.emoji + " " + team.name : teamKey;
@@ -275,7 +290,8 @@
       if (bg) { card.style.background = bg; card.style.borderColor = "transparent"; }
       var txt = document.createElement("div");
       txt.className = "txt";
-      txt.innerHTML = "“" + sloganHtml(s.text) + "”";
+      txt.innerHTML = "“" + sloganHtml(s.text, s.cols) + "”";
+      brightenBolds(txt);
       txt.style.fontFamily = fontCss(s.font);
       if (bg) txt.style.color = "#1f2330";
       card.appendChild(txt);
@@ -368,7 +384,8 @@
       var isWinner = (phase === "closed" && maxCnt > 0 && counts[sid] === maxCnt);
       n.row.className = "rrow" + (isWinner ? " winner" : "");
       n.rank.textContent = isWinner ? "👑" : (i + 1);
-      n.txt.innerHTML = "“" + sloganHtml(slogans[sid].text) + "”";
+      n.txt.innerHTML = "“" + sloganHtml(slogans[sid].text, slogans[sid].cols) + "”";
+      brightenBolds(n.txt);
       n.txt.style.fontFamily = fontCss(slogans[sid].font);
       if (slogans[sid].desc) { n.dsc.textContent = slogans[sid].desc; n.dsc.hidden = false; }
       else { n.dsc.hidden = true; }

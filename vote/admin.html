@@ -226,7 +226,7 @@
       var row = document.createElement("div"); row.className = "modItem";
       var main = document.createElement("div"); main.style.flex = "1"; main.style.minWidth = "0";
       var txt = document.createElement("div"); txt.className = "mtxt";
-      txt.innerHTML = sloganHtml(s.text); txt.style.fontFamily = fontCss(s.font);
+      txt.innerHTML = sloganHtml(s.text, s.cols); txt.style.fontFamily = fontCss(s.font);
       main.appendChild(txt);
       if (s.desc) { var d = document.createElement("div"); d.className = "mdesc"; d.textContent = s.desc; main.appendChild(d); }
       var chip = document.createElement("span"); chip.className = "mchip";
