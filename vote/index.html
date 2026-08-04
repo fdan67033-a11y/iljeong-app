@@ -788,14 +788,16 @@
       var meta = document.createElement("div");
       meta.className = "metaRow";
       var own = s.team === voter.team;
+      // voteAll 권한이 있는 사람(과장님)은 우리 팀 문구에도 투표할 수 있습니다
+      var blocked = own && !voter.voteAll;
       if (own) {
         var chip = document.createElement("span");
         chip.className = "chip";
-        chip.textContent = opts.button ? "우리 팀 · 투표 불가" : "우리 팀";
+        chip.textContent = blocked && opts.button ? "우리 팀 · 투표 불가" : "우리 팀";
         chip.style.background = "#8a90a3";
         meta.appendChild(chip);
       }
-      if (opts.button && !own) {
+      if (opts.button && !blocked) {
         var hint = document.createElement("span");
         hint.className = "prevHint";
         hint.textContent = "👆 눌러서 고지서 미리보기";
@@ -825,7 +827,7 @@
 
       // 투표 단계: 별도의 큰 체크박스로만 투표 (신중하게 고르도록 분리)
       if (opts.button) {
-        if (own) {
+        if (blocked) {
           el.classList.add("mine");
         } else {
           var sel = picks.indexOf(sid) >= 0;
@@ -1045,7 +1047,7 @@
       }
       if (phase === "vote") {
         if (submitted) { subEl.textContent = ""; done.hidden = false; renderDone(); return; }
-        subEl.textContent = POLL.subVote;
+        subEl.textContent = (voter.voteAll && POLL.subVoteAll) ? POLL.subVoteAll : POLL.subVote;
         vote.hidden = false; voteBar.hidden = false;
         var gv = document.getElementById("galleryV");
         gv.innerHTML = "";

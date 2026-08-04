@@ -10,6 +10,8 @@ const POLL = {
   title: "청렴 슬로건 공모",
   subCollect: "고지서·알림톡에 실릴 새 슬로건을 제출해주세요 · 한 사람당 최대 2개",
   subVote: "우리 팀 문구를 제외하고 3개를 골라주세요 · 문구 순서는 접속할 때마다 무작위로 섞입니다",
+  // voteAll 권한이 있는 사람(과장님)에게 보이는 안내 — 팀 제한 문구를 뺍니다
+  subVoteAll: "마음에 드는 문구 3개를 골라주세요 · 문구 순서는 접속할 때마다 무작위로 섞입니다",
   subClosed: "투표가 마감되었습니다 — 결과는 결과판에서 확인하세요",
 
   // 1인당 투표 수 — 3 고정. 바꾸려면 index.html/board.html의 picks(a·b·c 슬롯)와
@@ -113,8 +115,11 @@ const POLL = {
 
   // 투표자 명단 — h: 개인 토큰의 해시, name: 이름, team: 소속 팀 key
   // 이름은 실명으로 바꿔도 됩니다 (h는 QR 카드와 짝이므로 건드리지 마세요)
+  // voteAll: true 인 사람(과장님)은 자기 팀 문구에도 투표할 수 있습니다.
+  //   이 예외는 firebase-rules.json 의 ballots picks a·b·c 검증에도 같은 해시로 들어가 있으니
+  //   대상자를 바꾸려면 두 파일을 함께 고치고 규칙을 다시 게시해야 합니다.
   voters: [
-    { h: "7da75b0a8ee2e968", name: "세입운영팀1", team: "t1" },
+    { h: "7da75b0a8ee2e968", name: "세입운영팀1", team: "t1", voteAll: true },
     { h: "f3aa87f60cd1c949", name: "세입운영팀2", team: "t1" },
     { h: "b392b480caae167c", name: "세입운영팀3", team: "t1" },
     { h: "2997e7034b223db0", name: "세입운영팀4", team: "t1" },
