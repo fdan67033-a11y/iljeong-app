@@ -787,13 +787,13 @@
       }
       var meta = document.createElement("div");
       meta.className = "metaRow";
-      var own = s.team === voter.team;
-      // voteAll 권한이 있는 사람(과장님)은 우리 팀 문구에도 투표할 수 있습니다
-      var blocked = own && !voter.voteAll;
-      if (own) {
+      // voteAll 권한이 있는 사람(과장님)에게는 우리 팀 문구도 다른 팀 문구와 똑같이 보입니다
+      // ('우리 팀' 표시 없음 + 투표 가능)
+      var blocked = s.team === voter.team && !voter.voteAll;
+      if (blocked) {
         var chip = document.createElement("span");
         chip.className = "chip";
-        chip.textContent = blocked && opts.button ? "우리 팀 · 투표 불가" : "우리 팀";
+        chip.textContent = opts.button ? "우리 팀 · 투표 불가" : "우리 팀";
         chip.style.background = "#8a90a3";
         meta.appendChild(chip);
       }
