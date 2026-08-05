@@ -89,6 +89,36 @@ body{background:var(--bg);color:var(--ink);font-family:"Apple SD Gothic Neo","Ma
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;z-index:60;background:#241f18;color:#fff;
   padding:10px 16px;border-radius:12px;font-size:14px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 .toast.on{opacity:.96}
+/* 카테고리 필터/선택 */
+.filters{display:flex;gap:6px;padding:10px 14px 0;flex-wrap:wrap}
+.fchip{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;
+  padding:5px 11px;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px}
+.fchip.on{background:var(--blue-soft);color:var(--blue);border-color:transparent}
+.catpick{margin:0 auto 8px;max-width:640px;display:flex;gap:6px}
+.badge.cbuy{background:#e2f5ec;color:#177a55}
+.badge.cmeal{background:#f6ecd7;color:#8a6d29}
+.badge.cidea{background:#efe7fb;color:#7442c8}
+.badge.pay{background:#f6ecd7;color:#8a6d29}
+.badge.pay.ok{background:#e2f5ec;color:#177a55}
+@media(prefers-color-scheme:dark){
+  .badge.cbuy{background:#173226;color:#48c495}
+  .badge.cmeal{background:#33291a;color:#c9a45a}
+  .badge.cidea{background:#2a2140;color:#b493e8}
+  .badge.pay{background:#33291a;color:#c9a45a}
+  .badge.pay.ok{background:#173226;color:#48c495}
+}
+/* 급식 결제 시트 */
+.mhead{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+.mhead .mtotal{margin-left:auto;font-weight:800;color:var(--brown)}
+.mprog{font-size:13.5px;color:var(--muted);margin:2px 0 10px}
+.mrow{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.mrow input{width:22px;height:22px;accent-color:var(--green);flex:0 0 auto}
+.mrow .mname{flex:1;font-size:15.5px;font-weight:600;word-break:break-word}
+.mrow.paid .mname{text-decoration:line-through;color:var(--muted)}
+.mrow .mamt{font-size:15px;font-weight:700;white-space:nowrap}
+.mrow.paid .mamt{color:var(--muted)}
+.mwarn{margin-top:10px;font-size:12.5px;color:var(--red)}
+.mleft{margin-top:12px;text-align:right;font-size:14.5px;font-weight:700}
 </style>
 </head>
 <body>
@@ -99,6 +129,7 @@ body{background:var(--bg);color:var(--ink);font-family:"Apple SD Gothic Neo","Ma
     <button class="iconbtn" onclick="refresh()" title="새로고침">⟳</button>
     <button class="iconbtn" onclick="openSetup()" title="설정">⚙</button>
   </div>
+  <div class="filters" id="filters"></div>
   <div class="wrap" id="list"><div class="empty">불러오는 중…</div></div>
 </div>
 
@@ -107,6 +138,7 @@ body{background:var(--bg);color:var(--ink);font-family:"Apple SD Gothic Neo","Ma
     <span class="pd" id="pvDate"></span><span id="pvText"></span>
     <span class="px" onclick="clearPreview()">✕</span>
   </div>
+  <div class="catpick" id="catPick"></div>
   <div class="row">
     <input id="addText" placeholder="일정 입력 (예: 내일 3시 회의)" autocomplete="off"
       oninput="onAddInput()" onkeydown="if(event.key==='Enter')addTask()">
@@ -136,6 +168,11 @@ body{background:var(--bg);color:var(--ink);font-family:"Apple SD Gothic Neo","Ma
   </div>
 </div>
 
+<!-- 급식 결제 시트 -->
+<div class="sheet" id="mealSheet" onclick="if(event.target===this)closeMeal()">
+  <div class="sheetcard" id="mealCard"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -153,11 +190,41 @@ function pad(n){return String(n).padStart(2,'0')}
 function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
 function todayYmd(){return ymd(new Date())}
 function nowMin(){var d=new Date();return ymd(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes())}
+function nowSec(){var d=new Date();return ymd(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())}
 function uuid(){return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,function(c){var r=Math.random()*16|0,v=c==='x'?r:(r&3|8);return v.toString(16)})}
 function toast(m){var t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('on')},1800)}
 function b64ToStr(b64){var bin=atob(String(b64||'').replace(/\s/g,''));var by=Uint8Array.from(bin,function(c){return c.charCodeAt(0)});return new TextDecoder('utf-8').decode(by)}
 function strToB64(str){var by=new TextEncoder().encode(str);var bin='';by.forEach(function(b){bin+=String.fromCharCode(b)});return btoa(bin)}
 function setSt(s){$('syncSt').textContent=s}
+function fmtWon(n){return (Number(n)||0).toLocaleString('ko-KR')+'원'}
+
+/* ================= 카테고리 ================= */
+var CATS=['일정','살것','급식결제','아이디어'];
+var CAT_EMOJI={'일정':'📋','살것':'🛒','급식결제':'🍚','아이디어':'💡'};
+var CAT_CLS={'살것':'cbuy','급식결제':'cmeal','아이디어':'cidea'};
+var addCat='일정';
+function catOf(t){return CATS.indexOf(t&&t.category)>=0?t.category:'일정'}
+function getFilter(){
+  var f={}; try{f=JSON.parse(localStorage.getItem('catFilter')||'{}')||{}}catch(e){f={}}
+  var o={}; CATS.forEach(function(c){o[c]=f[c]!==false}); return o;
+}
+function toggleFilter(c){
+  var f=getFilter(); f[c]=!f[c];
+  localStorage.setItem('catFilter',JSON.stringify(f));
+  renderFilters(); render();
+}
+function renderFilters(){
+  var f=getFilter();
+  $('filters').innerHTML=CATS.map(function(c){
+    return '<button class="fchip'+(f[c]?' on':'')+'" onclick="toggleFilter(\''+c+'\')">'+CAT_EMOJI[c]+' '+c+'</button>';
+  }).join('');
+}
+function pickCat(c){ addCat=c; renderCatPick(); }
+function renderCatPick(){
+  $('catPick').innerHTML=CATS.map(function(c){
+    return '<button class="fchip'+(addCat===c?' on':'')+'" onclick="pickCat(\''+c+'\')">'+CAT_EMOJI[c]+' '+c+'</button>';
+  }).join('');
+}
 
 /* ================= GitHub API ================= */
 function ghHeaders(){return {'Authorization':'Bearer '+token(),'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}}
@@ -191,46 +258,75 @@ async function refresh(){
     localStorage.setItem('cache_at', nowMin());
     setSt('✓ '+nowMin().slice(11));
     render();
+    if(mealOpenId) renderMeal();   // 열려 있는 급식 시트도 최신 상태로
   }catch(e){
     setSt('오프라인');
     var c=localStorage.getItem('cache_tasks');
-    if(c){ STATE.tasks=JSON.parse(c); render(); toast('오프라인 — 저장된 내용 표시'); }
+    var cached=null; try{ cached=c?JSON.parse(c):null; }catch(e2){ cached=null; }
+    if(cached){ STATE.tasks=cached; render(); toast('오프라인 — 저장된 내용 표시'); }
     else { $('list').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
   }
 }
 
-/* 쓰기(읽고-고쳐-쓰기, 충돌 시 재시도) */
-async function commit(mutateFn, okMsg){
-  if(!token()){ openSetup(); return; }
-  if(STATE.pending){ toast('처리 중…'); return; }
-  STATE.pending=true; setSt('저장…');
+/* 쓰기(읽고-고쳐-쓰기, 충돌 시 재시도).
+   진행 중에 들어온 조작(체크 연타 등)은 버리지 않고 큐에 모아 다음 저장에 일괄 반영 */
+var COMMIT_QUEUE=[];
+function commit(mutateFn, okMsg){
+  if(!token()){ openSetup(); return Promise.resolve(false); }
+  return new Promise(function(resolve){
+    COMMIT_QUEUE.push({fn:mutateFn, msg:okMsg, resolve:resolve});
+    drainCommits();
+  });
+}
+async function drainCommits(){
+  if(STATE.pending) return;
+  STATE.pending=true;
   try{
-    for(var i=0;i<3;i++){
-      var g=await ghGet();               // 항상 최신 받아서
-      var tasks=g.tasks;
-      mutateFn(tasks);                   // 변경 적용
-      var res=await ghPut(tasks, g.sha); // 최신 sha로 저장
-      if(!res.conflict){
-        STATE.tasks=tasks; STATE.sha=res.sha;
-        localStorage.setItem('cache_tasks', JSON.stringify(tasks));
-        setSt('✓ '+nowMin().slice(11)); render();
-        if(okMsg) toast(okMsg);
-        STATE.pending=false; return true;
+    while(COMMIT_QUEUE.length){
+      var batch=COMMIT_QUEUE.splice(0, COMMIT_QUEUE.length);
+      setSt('저장…');
+      var ok=false, errMsg='';
+      for(var i=0;i<3;i++){
+        try{
+          var g=await ghGet();               // 항상 최신 받아서
+          var tasks=g.tasks;
+          batch.forEach(function(b){ b.fn(tasks); });   // 밀린 조작까지 한 번에 적용
+          var res=await ghPut(tasks, g.sha); // 최신 sha로 저장
+          if(!res.conflict){
+            STATE.tasks=tasks; STATE.sha=res.sha;
+            localStorage.setItem('cache_tasks', JSON.stringify(tasks));
+            setSt('✓ '+nowMin().slice(11)); render();
+            if(mealOpenId) renderMeal();
+            var msgs=batch.map(function(b){return b.msg}).filter(Boolean);
+            if(msgs.length) toast(msgs[msgs.length-1]);
+            ok=true; break;
+          }
+          // 충돌 → 잠깐 후 재시도
+          await new Promise(function(r){setTimeout(r,300)});
+        }catch(e){ errMsg=e.message||String(e); break; }
       }
-      // 충돌 → 잠깐 후 재시도
-      await new Promise(function(r){setTimeout(r,300)});
+      if(!ok){
+        setSt('저장 실패'); toast(errMsg||'충돌이 반복돼 저장하지 못했습니다. 다시 시도하세요.');
+        batch.forEach(function(b){ b.resolve(false); });
+        COMMIT_QUEUE.splice(0).forEach(function(b){ b.resolve(false); });
+        break;
+      }
+      batch.forEach(function(b){ b.resolve(true); });
     }
-    throw new Error('충돌이 반복돼 저장하지 못했습니다. 다시 시도하세요.');
-  }catch(e){
-    setSt('저장 실패'); toast(e.message||String(e)); STATE.pending=false; return false;
+  } finally {
+    STATE.pending=false;
+    if(COMMIT_QUEUE.length) drainCommits();
   }
 }
 
 /* ================= 렌더 ================= */
 function taskDue(t){return String(t.due||'').slice(0,10)}
 function render(){
-  var pend=STATE.tasks.filter(function(t){return !t.completed});
-  var done=STATE.tasks.filter(function(t){return t.completed});
+  var f=getFilter();
+  var vis=STATE.tasks.filter(function(t){return f[catOf(t)]});
+  var hiddenN=STATE.tasks.length-vis.length;
+  var pend=vis.filter(function(t){return !t.completed});
+  var done=vis.filter(function(t){return t.completed});
   pend.sort(function(a,b){return (taskDue(a)||'9999').localeCompare(taskDue(b)||'9999')});
   var today=todayYmd();
   // 주말 포함 이번주 끝(일요일 기준 7일)
@@ -250,7 +346,7 @@ function render(){
   h+=grp('이번 주','week',groups.week,'');
   h+=grp('예정','later',groups.later,'');
   h+=grp('날짜 없음','noday',groups.noday,'');
-  if(!pend.length) h='<div class="empty">🎉 미완료 일정이 없습니다.</div>';
+  if(!pend.length) h='<div class="empty">'+(hiddenN?'필터로 숨겨진 일정 '+hiddenN+'건 외에는 없습니다.':'🎉 미완료 일정이 없습니다.')+'</div>';
   // 완료 접기
   if(done.length){
     done.sort(function(a,b){return String(b.completed_at||'').localeCompare(String(a.completed_at||''))});
@@ -270,10 +366,19 @@ function taskHtml(t){
   var noteN=(t.notes&&t.notes.length)||0;
   var d=taskDue(t);
   var dd=/^\d{4}-\d{2}-\d{2}$/.test(d)?(d.slice(5).replace('-','/')):'';
+  var c=catOf(t);
+  var catB=c!=='일정'?'<span class="badge '+(CAT_CLS[c]||'')+'">'+CAT_EMOJI[c]+' '+c+'</span>':'';
+  var m=(t.meal&&t.meal.restaurants&&t.meal.restaurants.length)?t.meal:null;
+  var payB='', open='';
+  if(m){
+    var paidN=m.restaurants.filter(function(r){return r.paid}).length;
+    payB='<span class="badge pay'+(paidN===m.restaurants.length?' ok':'')+'">💳 '+paidN+'/'+m.restaurants.length+'</span>';
+    open=' onclick="openMeal(\''+t.id+'\')" style="cursor:pointer"';
+  }
   return '<div class="task'+(t.completed?' done':'')+'">'
     +'<button class="check" onclick="toggle(\''+t.id+'\')">'+(t.completed?'✓':'')+'</button>'
-    +'<div class="tbody"><div class="ttext">'+esc(t.text)+'</div>'
-    +'<div class="tmeta">'+(dd?'<span class="badge">'+dd+'</span>':'')
+    +'<div class="tbody"'+open+'><div class="ttext">'+esc(t.text)+'</div>'
+    +'<div class="tmeta">'+(dd?'<span class="badge">'+dd+'</span>':'')+catB+payB
     +(noteN?'<span class="badge note">쪽지 '+noteN+'</span>':'')+'</div></div></div>';
 }
 function toggleDone(){ localStorage.setItem('showDone', localStorage.getItem('showDone')==='1'?'0':'1'); render(); }
@@ -288,18 +393,71 @@ function toggle(id){
     }}
   });
 }
-function makeTask(text, due){
+function makeTask(text, due, cat){
   var created=todayYmd();
   return { id:uuid(), text:text, created:created, due:due||created,
     created_dt:created+' 00:00', due_dt:(due||created)+' 00:00',
     completed:false, completed_at:null, color:null, note:'', notes:[],
-    linked_manual_ids:[], linked_files:[], updated_at:nowMin(), origin:'phone' };
+    linked_manual_ids:[], linked_files:[], updated_at:nowMin(), origin:'phone',
+    category:(CATS.indexOf(cat)>=0?cat:'일정') };
 }
 function addTask(){
   var raw=$('addText').value.trim(); if(!raw){ return; }
   var p=parseKo(raw);
-  commit(function(tasks){ tasks.unshift(makeTask(p.text||raw, p.due)); }, '추가했습니다').then(function(ok){
-    if(ok){ $('addText').value=''; clearPreview(); }
+  var cat=addCat;
+  commit(function(tasks){ tasks.unshift(makeTask(p.text||raw, p.due, cat)); }, CAT_EMOJI[cat]+' '+cat+'에 추가했습니다').then(function(ok){
+    if(ok){ $('addText').value=''; clearPreview(); addCat='일정'; renderCatPick(); }
+  });
+}
+
+/* ================= 급식 결제 시트 ================= */
+var mealOpenId=null;
+function findTask(id){ for(var i=0;i<STATE.tasks.length;i++){ if(STATE.tasks[i].id===id) return STATE.tasks[i]; } return null; }
+function openMeal(id){ mealOpenId=id; renderMeal(); $('mealSheet').classList.add('on'); }
+function closeMeal(){ mealOpenId=null; $('mealSheet').classList.remove('on'); }
+function renderMeal(){
+  var t=findTask(mealOpenId);
+  if(!t||!t.meal||!t.meal.restaurants){ closeMeal(); return; }
+  var m=t.meal, paidN=0, paidSum=0, total=0;
+  m.restaurants.forEach(function(r){ total+=Number(r.amount)||0; if(r.paid){ paidN++; paidSum+=Number(r.amount)||0; } });
+  var mon=/^\d{4}-\d{2}$/.test(m.month||'')?(Number(m.month.slice(5))+'월'):'';
+  var h='<div class="mhead"><h2>🍚 '+esc(mon?mon+' 급식비 결제':t.text)+'</h2>'
+    +'<span class="mtotal">'+fmtWon(m.total!=null?m.total:total)+'</span></div>'
+    +'<div class="mprog">식당 '+m.restaurants.length+'곳 · 결제 '+paidN+'/'+m.restaurants.length+' · '+fmtWon(paidSum)+' 완료</div>';
+  h+=m.restaurants.map(function(r,i){
+    return '<label class="mrow'+(r.paid?' paid':'')+'">'
+      +'<input type="checkbox" '+(r.paid?'checked':'')+' data-name="'+encodeURIComponent(r.name||'')+'" onchange="toggleMealPaid(\''+t.id+'\','+i+',this)">'
+      +'<span class="mname">'+esc(r.name)+'</span>'
+      +'<span class="mamt">'+fmtWon(r.amount)+'</span></label>';
+  }).join('');
+  if(m.warnings&&m.warnings.length) h+='<div class="mwarn">⚠ '+m.warnings.map(esc).join('<br>⚠ ')+'</div>';
+  h+='<div class="mleft">'+(paidN===m.restaurants.length?'✅ 모두 결제 완료':'남은 금액 '+fmtWon((m.total!=null?m.total:total)-paidSum))+'</div>';
+  h+='<button class="btn ghost" onclick="closeMeal()">닫기</button>';
+  $('mealCard').innerHTML=h;
+}
+function toggleMealPaid(id, idx, el){
+  var name=decodeURIComponent(el.getAttribute('data-name')||'');
+  var want=!!el.checked;   // 목표 상태(낡은 화면에서의 탭이 다른 기기의 체크를 반전시키지 않게)
+  commit(function(tasks){
+    for(var i=0;i<tasks.length;i++){
+      var t=tasks[i];
+      if(t.id!==id||!t.meal||!t.meal.restaurants) continue;
+      var r=t.meal.restaurants[idx];
+      if(!r||String(r.name)!==name){ // 다른 기기에서 순서가 바뀐 경우 이름으로 찾기
+        r=null;
+        for(var j=0;j<t.meal.restaurants.length;j++){ if(String(t.meal.restaurants[j].name)===name){ r=t.meal.restaurants[j]; break; } }
+      }
+      if(!r) break;
+      r.paid=want; r.paid_at=want?nowMin():null; r.paid_upd=nowSec();
+      var all=t.meal.restaurants.every(function(x){return x.paid});
+      if(all&&!t.completed){ t.completed=true; t.completed_at=todayYmd(); t.meal.auto_completed=true; }
+      if(!all&&t.completed&&t.meal.auto_completed){ t.completed=false; t.completed_at=null; t.meal.auto_completed=false; }
+      t.updated_at=nowMin();
+      break;
+    }
+  }).then(function(ok){
+    if(ok&&mealOpenId) renderMeal();
+    else if(!ok) renderMeal(); // 실패 시 체크박스 원상복구
   });
 }
 function onAddInput(){
@@ -382,6 +540,7 @@ function logout(){ if(confirm('토큰을 지울까요?')){ localStorage.removeIt
 /* ================= 시작 ================= */
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
 window.addEventListener('load', function(){
+  renderFilters(); renderCatPick();
   $('repoInput').value=repo();
   if(!token()){ openSetup(); $('list').innerHTML='<div class="empty">⚙ 설정에서 토큰을 넣으면 일정이 나타납니다.</div>'; setSt(''); }
   else refresh();
